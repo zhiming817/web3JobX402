@@ -14,8 +14,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: [
-      '@solana/web3.js',
-      '@coral-xyz/anchor',
       'bn.js',
       'elliptic',
       'buffer'

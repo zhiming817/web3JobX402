@@ -12,9 +12,8 @@ import Certificates from './sections/Certificates';
 import ResumePreview from './ResumePreview';
 import { resumeService } from '../services';
 import { transformResumeData, validateResumeData } from '../services/resume.transform';
-import { downloadEncryptedResume } from '../utils/ipfs';
-import { downloadAndDecryptResume, prepareResumeForUpload } from '../utils/crypto';
-import { uploadEncryptedResume } from '../utils/ipfs';
+import { encryptWithSeal, decryptWithSeal } from '../utils/seal';
+import { uploadToWalrus, downloadFromWalrus } from '../utils/walrus';
 
 export default function ResumeEdit() {
   const navigate = useNavigate();
@@ -129,12 +128,12 @@ export default function ResumeEdit() {
     try {
       setIsDecrypting(true);
       
-      console.log('📥 下载加密数据...');
-      const encryptedBlob = await downloadEncryptedResume(cid);
+      console.log('📥 从 Walrus 下载加密数据...');
+      const encryptedBlob = await downloadFromWalrus(cid);
       console.log('✅ 下载完成:', encryptedBlob.size, 'bytes');
       
-      console.log('🔓 解密中...');
-      const decryptedData = await downloadAndDecryptResume(encryptedBlob, key);
+      console.log('🔓 使用 Seal 解密中...');
+      const decryptedData = await decryptWithSeal(encryptedBlob, key);
       console.log('✅ 解密成功:', decryptedData);
       
       // 3. 转换为表单格式
@@ -276,39 +275,42 @@ export default function ResumeEdit() {
       const walletAddress = publicKey;
       
       // 如果有加密密钥和 CID，说明原来是加密简历，需要重新加密
-      let newCid = null;
+      let newBlobId = null;
+      let newSalt = null;
       if (encryptionKey && currentCid) {
         console.log('🔐 检测到加密简历，开始重新加密...');
         
         // 转换表单数据为 API 格式（用于加密）
         const dataToEncrypt = transformResumeData(formData, walletAddress);
         
-        // 1. 使用相同的密钥重新加密
-        const { encryptedBlob } = await prepareResumeForUpload(dataToEncrypt, encryptionKey);
+        // 1. 使用相同的密钥重新加密 (Seal 会生成新的 salt)
+        const { encryptedBlob, salt } = await encryptWithSeal(dataToEncrypt, encryptionKey);
         console.log('✅ 重新加密完成:', encryptedBlob.size, 'bytes');
         
-        // 2. 上传到 IPFS
-        console.log('☁️  上传到 IPFS...');
-        const { cid, url } = await uploadEncryptedResume(encryptedBlob, {
+        // 2. 上传到 Walrus
+        console.log('☁️  上传到 Walrus...');
+        const { blobId, url } = await uploadToWalrus(encryptedBlob, {
           owner: walletAddress,
           encrypted: true,
           timestamp: new Date().toISOString(),
           resumeId: id,
         });
         console.log('✅ 上传完成');
-        console.log('📝 新 CID:', cid);
+        console.log('📝 新 Blob ID:', blobId);
         console.log('🔗 URL:', url);
         
-        newCid = cid;
-        setCurrentCid(cid); // 更新当前 CID
+        newBlobId = blobId;
+        newSalt = salt;
+        setCurrentCid(blobId); // 更新当前 Blob ID
       }
       
       // 准备更新请求数据
       const updateData = transformResumeData(formData, walletAddress);
       
-      // 如果有新的 CID，添加到请求中
-      if (newCid) {
-        updateData.ipfs_cid = newCid;
+      // 如果有新的 Blob ID 和 Salt，添加到请求中
+      if (newBlobId) {
+        updateData.ipfs_cid = newBlobId;  // 后端字段兼容
+        updateData.encryption_salt = newSalt;
       }
       
       console.log('更新简历数据:', updateData);
