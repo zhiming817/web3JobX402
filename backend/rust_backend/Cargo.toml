@@ -1,6 +1,6 @@
 [package]
 name = "rust_backend"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2024"
 
 # 添加多个 binary 配置
