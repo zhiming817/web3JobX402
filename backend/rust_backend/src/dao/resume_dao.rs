@@ -38,7 +38,7 @@ impl ResumeDao {
             policy_object_id: Set(resume_data.policy_object_id),
             encryption_type: Set(encryption_type),
             summary: Set(summary),
-            price: Set(5_000_000), // 默认 5 USDC = 5,000,000 (USDC has 6 decimals)
+            price: Set(0), // 默认 5 USDC = 5,000,000 (USDC has 6 decimals)
             view_count: Set(0),
             unlock_count: Set(0),
             status: Set("active".to_string()),
