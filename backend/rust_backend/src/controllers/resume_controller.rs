@@ -18,18 +18,27 @@ impl ResumeController {
 
         let request = req.into_inner();
         
-        // 检查是否提供了 CID（前端加密方案）
-        let ipfs_cid = match request.ipfs_cid.as_ref() {
-            Some(cid) if !cid.is_empty() => cid.clone(),
+        // 检查是否提供了 blob_id（Walrus 存储）
+        let blob_id = match request.blob_id.as_ref() {
+            Some(id) if !id.is_empty() => id.clone(),
             _ => {
-                let response = ApiResponse::<()>::error(
-                    "IPFS CID is required. Please encrypt and upload the resume on frontend first.".to_string()
-                );
-                return HttpResponse::BadRequest().json(response);
+                // 向后兼容：检查旧的 ipfs_cid 字段
+                match request.ipfs_cid.as_ref() {
+                    Some(cid) if !cid.is_empty() => cid.clone(),
+                    _ => {
+                        let response = ApiResponse::<()>::error(
+                            "Blob ID is required. Please encrypt and upload the resume to Walrus first.".to_string()
+                        );
+                        return HttpResponse::BadRequest().json(response);
+                    }
+                }
             }
         };
 
-        match ResumeService::create_resume(&db, request, ipfs_cid).await {
+        println!("Creating resume with blob_id: {}, encryption_type: {:?}", 
+                 blob_id, request.encryption_type);
+
+        match ResumeService::create_resume(&db, request, blob_id).await {
             Ok(resume_id) => {
                 let response = ApiResponse::success_with_message(
                     resume_id,

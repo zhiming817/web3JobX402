@@ -10,6 +10,7 @@ import ResumePreviewPage from './resume/ResumePreviewPage.jsx';
 import ResumeList from './resume/ResumeList.jsx';
 import ResumeBrowse from './resume/ResumeBrowse.jsx';
 import ResumeEncryptionExample from './components/ResumeEncryptionExample.jsx';
+import AllowlistManager from './components/AllowlistManager.jsx';
 import PageLayout from './layout/PageLayout.jsx';
 import { NETWORK_CONFIG } from './config.js';
 
@@ -34,6 +35,7 @@ function App() {
                 <Route path="/resume/preview/:id" element={<ResumePreviewPage />} />
                 <Route path="/resumes" element={<ResumeList />} />
                 <Route path="/resumes/browse" element={<ResumeBrowse />} />
+                <Route path="/allowlist" element={<PageLayout><AllowlistManager /></PageLayout>} />
                 <Route path="/encryption-test" element={<ResumeEncryptionExample />} />
                 <Route path="/templates" element={<div className="p-8 text-center"><h2 className="text-2xl">模板功能开发中...</h2></div>} />
             </Routes>

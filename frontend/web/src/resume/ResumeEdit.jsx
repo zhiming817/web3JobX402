@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction, useSignPersonalMessage } from '@mysten/dapp-kit';
 import PageLayout from '../layout/PageLayout';
 import PersonalInfo from './sections/PersonalInfo';
 import Skills from './sections/Skills';
@@ -14,11 +14,14 @@ import { resumeService } from '../services';
 import { transformResumeData, validateResumeData } from '../services/resume.transform';
 import { encryptWithSeal, decryptWithSeal } from '../utils/seal';
 import { uploadToWalrus, downloadFromWalrus } from '../utils/walrus';
+import { getSealClient, downloadAndDecryptResume } from '../utils/sealClient';
 
 export default function ResumeEdit() {
   const navigate = useNavigate();
   const { id } = useParams(); // 获取简历 ID
   const currentAccount = useCurrentAccount();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const connected = !!currentAccount;
   const publicKey = currentAccount?.address;
   const [activeSection, setActiveSection] = useState('personal');
@@ -30,6 +33,8 @@ export default function ResumeEdit() {
   const [encryptionKey, setEncryptionKey] = useState('');
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [currentCid, setCurrentCid] = useState(null); // 保存当前的 CID
+  const [encryptionType, setEncryptionType] = useState('simple'); // 加密类型
+  const [policyObjectId, setPolicyObjectId] = useState(null); // Allowlist ID
 
   // 表单数据
   const [formData, setFormData] = useState({
@@ -80,36 +85,57 @@ export default function ResumeEdit() {
       
       console.log('加载的简历数据:', resume);
       
-      // 检查是否有 IPFS CID（表示加密简历）
-      const ipfsCid = resume.ipfs_cid || resume.cid;
-      setCurrentCid(ipfsCid); // 保存 CID
+      // 保存加密类型和策略对象ID
+      const encType = resume.encryption_type || 'simple';
+      const policyId = resume.policy_object_id;
+      setEncryptionType(encType);
+      setPolicyObjectId(policyId);
       
-      if (!ipfsCid) {
-        // 没有 CID，说明是旧版本未加密的简历，直接显示
+      // 检查是否有 IPFS CID 或 blob_id（表示加密简历）
+      const ipfsCid = resume.ipfs_cid || resume.cid;
+      const blobId = resume.blob_id;
+      setCurrentCid(ipfsCid || blobId); // 保存 CID/blob_id
+      
+      if (!ipfsCid && !blobId) {
+        // 没有 CID/blob_id，说明是旧版本未加密的简历，直接显示
         console.log('⚠️ 未加密的简历，直接显示');
         setFormData(transformResumeToFormData(resume));
         setIsLoading(false);
         return;
       }
       
-      console.log('🔐 检测到加密简历，CID:', ipfsCid);
+      console.log('🔐 检测到加密简历，类型:', encType, 'ID:', blobId || ipfsCid);
       
-      // 1. 尝试从 localStorage 读取密钥
-      const savedKeys = JSON.parse(localStorage.getItem('resumeEncryptionKeys') || '{}');
-      let key = savedKeys[id];
-      
-      if (!key) {
-        console.log('⚠️ 本地未找到密钥，需要用户输入');
-        setNeedsKey(true);
-        setIsLoading(false);
-        return;
+      if (encType === 'seal') {
+        // Seal 加密：需要验证 Allowlist 并使用 SessionKey
+        if (!blobId || !resume.encryption_id || !policyId) {
+          throw new Error('Seal 加密简历信息不完整');
+        }
+        
+        console.log('🔒 Seal 加密简历，开始解密流程...');
+        await decryptSealResume(blobId, resume.encryption_id, policyId);
+        
+      } else {
+        // 简单加密：使用本地密钥
+        const storageId = blobId || ipfsCid;
+        
+        // 1. 尝试从 localStorage 读取密钥
+        const savedKeys = JSON.parse(localStorage.getItem('resumeEncryptionKeys') || '{}');
+        let key = savedKeys[id];
+        
+        if (!key) {
+          console.log('⚠️ 本地未找到密钥，需要用户输入');
+          setNeedsKey(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('✅ 找到本地密钥，开始解密...');
+        setEncryptionKey(key); // 保存密钥供后续更新使用
+        
+        // 2. 下载并解密
+        await decryptAndLoadResume(storageId, key);
       }
-      
-      console.log('✅ 找到本地密钥，开始解密...');
-      setEncryptionKey(key); // 保存密钥供后续更新使用
-      
-      // 2. 下载并解密
-      await decryptAndLoadResume(ipfsCid, key);
       
     } catch (err) {
       console.error('加载简历失败:', err);
@@ -118,9 +144,82 @@ export default function ResumeEdit() {
       if (err.message.includes('Unauthorized')) {
         alert('无权编辑此简历');
         navigate('/resumes');
+      } else if (err.message.includes('NoAccess')) {
+        alert('您不在简历的访问白名单中，无法编辑');
+        navigate('/resumes');
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const decryptSealResume = async (blobId, encryptionId, policyObjectId) => {
+    try {
+      setIsDecrypting(true);
+      
+      if (!currentAccount) {
+        throw new Error('请先连接钱包');
+      }
+      
+      console.log('📝 创建 SessionKey...', {
+        blobId,
+        encryptionId,
+        policyObjectId
+      });
+      
+      // 1. 创建 SessionKey
+      const { SessionKey } = await import('@mysten/seal');
+      const { getSuiClient } = await import('../utils/sealClient');
+      const { SEAL_CONFIG } = await import('../config/seal.config');
+      
+      const suiClient = getSuiClient();
+      
+      const sessionKey = await SessionKey.create({
+        address: currentAccount.address,
+        packageId: SEAL_CONFIG.packageId,
+        ttlMin: 10, // 10 分钟有效期 (Seal 限制 1-30)
+        suiClient,
+      });
+      
+      // 2. 签名 SessionKey (需要用户在钱包中确认)
+      console.log('✍️ 请在钱包中签名 SessionKey...');
+      const personalMessage = sessionKey.getPersonalMessage();
+      
+      const result = await signPersonalMessage({
+        message: personalMessage,
+      });
+      
+      await sessionKey.setPersonalMessageSignature(result.signature);
+      console.log('✅ SessionKey 创建并签名成功');
+      
+      try {
+        // 3. 下载并解密
+        console.log('📥 下载并解密 Seal 简历...');
+        const decrypted = await downloadAndDecryptResume(
+          blobId,
+          sessionKey,
+          policyObjectId
+        );
+        
+        console.log('✅ Seal 解密成功:', decrypted);
+        
+        // 4. 转换为表单格式
+        setFormData(transformResumeToFormData(decrypted));
+        setNeedsKey(false);
+      } catch (err) {
+        console.error('❌ Seal 解密失败:', err);
+        if (err.message.includes('NoAccess') || err.message.includes('无权访问')) {
+          throw new Error('您不在简历的访问白名单中，无法编辑');
+        } else {
+          throw new Error(`Seal 解密失败: ${err.message}`);
+        }
+      }
+      
+    } catch (err) {
+      console.error('Seal 解密流程失败:', err);
+      throw err;
+    } finally {
+      setIsDecrypting(false);
     }
   };
 
@@ -132,7 +231,7 @@ export default function ResumeEdit() {
       const encryptedBlob = await downloadFromWalrus(cid);
       console.log('✅ 下载完成:', encryptedBlob.size, 'bytes');
       
-      console.log('🔓 使用 Seal 解密中...');
+      console.log('🔓 使用简单加密解密中...');
       const decryptedData = await decryptWithSeal(encryptedBlob, key);
       console.log('✅ 解密成功:', decryptedData);
       

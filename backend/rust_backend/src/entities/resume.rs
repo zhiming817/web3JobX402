@@ -15,17 +15,29 @@ pub struct Model {
     /// 所有者用户 ID
     pub owner_id: i64,
     
-    /// 所有者钱包地址
-    #[sea_orm(column_type = "String(StringLen::N(44))")]
+    /// 所有者钱包地址 - 支持 Sui/Solana
+    #[sea_orm(column_type = "String(StringLen::N(100))")]
     pub owner_wallet: String,
     
-    /// IPFS/Irys CID (加密简历数据)
-    #[sea_orm(column_type = "String(StringLen::N(100))")]
-    pub ipfs_cid: String,
+    /// Walrus Blob ID 或 IPFS CID (加密简历数据)
+    #[sea_orm(column_type = "String(StringLen::N(150))")]
+    pub blob_id: String,
     
-    /// 加密密钥（加密存储）
-    #[sea_orm(column_type = "Text")]
-    pub encryption_key: String,
+    /// 加密密钥（简单加密模式使用，Seal 模式为 NULL）
+    #[sea_orm(column_type = "Text", nullable)]
+    pub encryption_key: Option<String>,
+    
+    /// Seal 加密 ID（Seal 模式使用）
+    #[sea_orm(column_type = "String(StringLen::N(150))", nullable)]
+    pub encryption_id: Option<String>,
+    
+    /// Allowlist 对象 ID（访问控制策略，Seal 模式使用）
+    #[sea_orm(column_type = "String(StringLen::N(100))", nullable)]
+    pub policy_object_id: Option<String>,
+    
+    /// 加密类型: simple(简单加密) 或 seal(Seal 加密)
+    #[sea_orm(column_type = "String(StringLen::N(20))")]
+    pub encryption_type: String,
     
     /// 公开摘要 (JSON 格式)
     #[sea_orm(column_type = "Json")]

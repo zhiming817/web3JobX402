@@ -11,7 +11,7 @@ impl ResumeService {
     pub async fn create_resume(
         db: &DatabaseConnection,
         request: CreateResumeRequest,
-        ipfs_cid: String,  // 前端上传后返回的 CID
+        blob_id: String,  // Walrus Blob ID
     ) -> Result<String, String> {
         // 1. 先确保用户存在(如果不存在则自动创建)
         let user_id = UserService::create_or_get_user(db, request.owner.clone())
@@ -34,16 +34,21 @@ impl ResumeService {
             certificates: request.certificates,
             created_at: now,
             updated_at: now,
-            ipfs_cid: None, // CID is stored separately in database
+            ipfs_cid: None, // 已废弃
+            blob_id: Some(blob_id.clone()),
+            encryption_id: request.encryption_id.clone(),
+            policy_object_id: request.policy_object_id.clone(),
+            encryption_type: request.encryption_type.clone(),
         };
 
-        log::info!("Creating resume with CID: {}", ipfs_cid);
+        log::info!("Creating resume with Blob ID: {}, encryption_type: {:?}", 
+                   blob_id, request.encryption_type);
 
-        // 3. 创建简历记录(使用前端提供的 CID，不再生成加密密钥)
-        // 注意：加密密钥由前端管理，不存储在后端
-        let encryption_key = String::new(); // 空字符串，表示前端加密
+        // 3. 创建简历记录
+        // 注意: 简单加密时 encryption_key 由前端管理不存储; Seal 加密时为 None
+        let encryption_key = request.encryption_key.unwrap_or_default();
         
-        ResumeDao::create(db, user_id, resume, ipfs_cid, encryption_key)
+        ResumeDao::create(db, user_id, resume, blob_id, encryption_key)
             .await
             .map_err(|e| format!("Failed to create resume: {}", e))?;
         
@@ -93,6 +98,10 @@ impl ResumeService {
                     unlock_count: r.unlock_count,
                     status: r.status.clone(),
                     ipfs_cid: resume.ipfs_cid,
+                    blob_id: resume.blob_id,
+                    encryption_id: resume.encryption_id,
+                    policy_object_id: resume.policy_object_id,
+                    encryption_type: resume.encryption_type,
                 })
             })
             .collect();
@@ -121,8 +130,15 @@ impl ResumeService {
         let mut resume_data: Resume = serde_json::from_value(resume.summary.clone())
             .map_err(|e| format!("Failed to parse resume: {}", e))?;
 
-        // 4. 添加 IPFS CID（用于前端解密）
-        resume_data.ipfs_cid = Some(resume.ipfs_cid.clone());
+        // 4. 添加数据库中的加密相关字段（这些字段不在 summary 中）
+        resume_data.ipfs_cid = Some(resume.blob_id.clone()); // 向后兼容
+        resume_data.blob_id = Some(resume.blob_id.clone());
+        resume_data.encryption_id = resume.encryption_id.clone();
+        resume_data.policy_object_id = resume.policy_object_id.clone();
+        resume_data.encryption_type = Some(resume.encryption_type.clone());
+
+        log::info!("Resume detail: id={}, encryption_type={}, policy_object_id={:?}", 
+                   resume_id, resume.encryption_type, resume.policy_object_id);
 
         Ok(resume_data)
     }
@@ -138,10 +154,11 @@ impl ResumeService {
             .map_err(|e| format!("Failed to fetch resume: {}", e))?
             .ok_or_else(|| "Resume not found".to_string())?;
 
-        // 使用新的 CID（如果提供），否则保留旧的 CID
-        let new_ipfs_cid = request.ipfs_cid
+        // 使用新的 blob_id（如果提供），否则保留旧的
+        let new_blob_id = request.blob_id
             .clone()
-            .unwrap_or(existing.ipfs_cid.clone());
+            .or(request.ipfs_cid.clone())  // 向后兼容
+            .unwrap_or(existing.blob_id.clone());
 
         let updated = Resume {
             id: resume_id.to_string(),
@@ -155,7 +172,11 @@ impl ResumeService {
             certificates: request.certificates,
             created_at: existing.created_at.and_utc().timestamp(),
             updated_at: chrono::Utc::now().timestamp(),
-            ipfs_cid: None, // CID is stored separately in database
+            ipfs_cid: None, // 已废弃
+            blob_id: Some(new_blob_id.clone()),
+            encryption_id: request.encryption_id.clone(),
+            policy_object_id: request.policy_object_id.clone(),
+            encryption_type: request.encryption_type.clone(),
         };
 
         let summary = serde_json::to_value(&updated)
@@ -164,8 +185,8 @@ impl ResumeService {
         ResumeDao::update(
             db,
             resume_id,
-            new_ipfs_cid,  // 使用新的 CID
-            existing.encryption_key.clone(),
+            new_blob_id,
+            existing.encryption_key,
             summary,
             existing.price
         )

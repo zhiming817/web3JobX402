@@ -12,18 +12,31 @@ impl ResumeDao {
         db: &DatabaseConnection,
         user_id: i64,
         resume_data: ResumeModel,
-        ipfs_cid: String,
+        blob_id: String,
         encryption_key: String,
     ) -> Result<i64> {
         let owner = resume_data.owner.clone();
         let summary = serde_json::to_value(&resume_data).unwrap_or_default();
         
+        // 从 resume_data 中获取 encryption_type，默认为 "simple"
+        let encryption_type = resume_data.encryption_type.clone().unwrap_or_else(|| "simple".to_string());
+        
+        // 处理 encryption_key：如果是空字符串则转为 None
+        let encryption_key_opt = if encryption_key.is_empty() {
+            None
+        } else {
+            Some(encryption_key)
+        };
+        
         let resume = resume::ActiveModel {
             resume_id: Set(resume_data.id),
-            owner_id: Set(user_id), // 使用真实的 user_id
+            owner_id: Set(user_id),
             owner_wallet: Set(owner),
-            ipfs_cid: Set(ipfs_cid),
-            encryption_key: Set(encryption_key),
+            blob_id: Set(blob_id),
+            encryption_key: Set(encryption_key_opt),
+            encryption_id: Set(resume_data.encryption_id),
+            policy_object_id: Set(resume_data.policy_object_id),
+            encryption_type: Set(encryption_type),
             summary: Set(summary),
             price: Set(5_000_000), // 默认 5 USDC = 5,000,000 (USDC has 6 decimals)
             view_count: Set(0),
@@ -117,13 +130,13 @@ impl ResumeDao {
     pub async fn update(
         db: &DatabaseConnection,
         resume_id: &str,
-        ipfs_cid: String,
-        encryption_key: String,
+        blob_id: String,
+        encryption_key: Option<String>,
         summary: serde_json::Value,
         price: i64,
     ) -> Result<()> {
         Resume::update_many()
-            .col_expr(resume::Column::IpfsCid, Expr::value(ipfs_cid))
+            .col_expr(resume::Column::BlobId, Expr::value(blob_id))
             .col_expr(resume::Column::EncryptionKey, Expr::value(encryption_key))
             .col_expr(resume::Column::Summary, Expr::value(summary))
             .col_expr(resume::Column::Price, Expr::value(price))

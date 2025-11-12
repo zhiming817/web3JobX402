@@ -1,15 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction, useSignPersonalMessage } from '@mysten/dapp-kit';
 import PageLayout from '../layout/PageLayout';
 import { resumeService } from '../services';
+import { getSealClient, downloadAndDecryptResume } from '../utils/sealClient';
+import { decryptWithSeal } from '../utils/seal';
+import { downloadFromWalrus } from '../utils/walrus';
 
 export default function ResumeBrowse() {
   const currentAccount = useCurrentAccount();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const connected = !!currentAccount;
   const publicKey = currentAccount?.address;
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // 解密相关状态
+  const [showDecryptModal, setShowDecryptModal] = useState(false);
+  const [selectedResume, setSelectedResume] = useState(null);
+  const [decryptedData, setDecryptedData] = useState(null);
+  const [isDecrypting, setIsDecrypting] = useState(false);
+  const [decryptKey, setDecryptKey] = useState('');
 
   const [filters, setFilters] = useState({
     keyword: '',
@@ -133,10 +145,115 @@ export default function ResumeBrowse() {
         setResumes(resumes.map(r => 
           r.resumeId === resumeId ? { ...r, isLocked: false } : r
         ));
+        
+        // 解锁后自动打开查看
+        const unlockedResume = resumes.find(r => r.resumeId === resumeId);
+        if (unlockedResume) {
+          handleViewResume({ ...unlockedResume, isLocked: false });
+        }
       } catch (err) {
         console.error('解锁失败:', err);
         alert(`解锁失败: ${err.message}\n\n这可能是因为：\n1. 需要真实的 x402 支付\n2. 钱包余额不足\n3. 网络错误`);
       }
+    }
+  };
+
+  // 查看简历（解锁后）
+  const handleViewResume = async (resume) => {
+    setSelectedResume(resume);
+    setShowDecryptModal(true);
+    setDecryptedData(null);
+    setDecryptKey('');
+    
+    // 如果已解锁，自动尝试解密
+    if (!resume.isLocked) {
+      await handleDecryptResume(resume);
+    }
+  };
+
+  // 解密简历内容
+  const handleDecryptResume = async (resume) => {
+    if (!currentAccount) {
+      setError('请先连接钱包');
+      return;
+    }
+
+    setIsDecrypting(true);
+    try {
+      const encryptionType = resume.encryption_type || 'simple';
+      
+      if (encryptionType === 'seal') {
+        // Seal 解密：验证 Allowlist 权限
+        if (!resume.blob_id || !resume.encryption_id || !resume.policy_object_id) {
+          throw new Error('Seal 加密简历信息不完整');
+        }
+
+        console.log('使用 Seal 解密:', {
+          blobId: resume.blob_id,
+          encryptionId: resume.encryption_id,
+          policyObjectId: resume.policy_object_id
+        });
+
+        // 创建 SessionKey
+        const { SessionKey } = await import('@mysten/seal');
+        const { getSuiClient } = await import('../utils/sealClient');
+        const { SEAL_CONFIG } = await import('../config/seal.config');
+        
+        const suiClient = getSuiClient();
+        
+        const sessionKey = await SessionKey.create({
+          address: currentAccount.address,
+          packageId: SEAL_CONFIG.packageId,
+          ttlMin: 10, // 10 分钟有效期 (Seal 限制 1-30)
+          suiClient,
+        });
+        
+        // 签名 SessionKey
+        console.log('✍️ 请在钱包中签名 SessionKey...');
+        const personalMessage = sessionKey.getPersonalMessage();
+        
+        const result = await signPersonalMessage({
+          message: personalMessage,
+        });
+        
+        await sessionKey.setPersonalMessageSignature(result.signature);
+        console.log('✅ SessionKey 创建并签名成功');
+
+        // 下载并解密
+        const decrypted = await downloadAndDecryptResume(
+          resume.blob_id,
+          sessionKey,
+          resume.policy_object_id
+        );
+        
+        setDecryptedData(decrypted);
+
+      } else {
+        // 简单加密：使用密钥
+        if (!decryptKey) {
+          throw new Error('请输入解密密钥');
+        }
+
+        if (!resume.blob_id) {
+          throw new Error('简历数据不完整');
+        }
+
+        console.log('使用简单加密解密:', resume.blob_id);
+
+        // 从 Walrus 下载
+        const encryptedBlob = await downloadFromWalrus(resume.blob_id);
+        
+        // 解密
+        const decrypted = await decryptWithSeal(encryptedBlob, decryptKey);
+        
+        setDecryptedData(decrypted);
+      }
+
+    } catch (err) {
+      console.error('解密失败:', err);
+      setError(err.message || '解密简历失败');
+    } finally {
+      setIsDecrypting(false);
     }
   };
 
@@ -395,6 +512,266 @@ export default function ResumeBrowse() {
             </div>
           </div>
         </div>
+
+        {/* 解密模态框 */}
+        {showDecryptModal && selectedResume && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Header */}
+              <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold">查看简历详情</h2>
+                  <p className="text-orange-100 mt-1">
+                    {selectedResume.encryption_type === 'seal' ? '🔒 Seal 加密保护' : '🔐 简单加密'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDecryptModal(false);
+                    setSelectedResume(null);
+                    setDecryptedData(null);
+                    setError(null);
+                  }}
+                  className="text-white hover:text-orange-200 transition-colors text-3xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {/* 如果是简单加密且未解密，显示密钥输入 */}
+                {selectedResume.encryption_type !== 'seal' && !decryptedData && (
+                  <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">🔑 需要加密密钥</h3>
+                    <p className="text-gray-700 mb-4">
+                      此简历已使用简单加密保护,请输入密钥以查看内容
+                    </p>
+                    
+                    <div className="bg-yellow-50 border border-yellow-300 rounded p-3 mb-4 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="text-yellow-600">💡</span>
+                        <div className="text-yellow-800">
+                          <p className="font-semibold mb-1">密钥在哪里?</p>
+                          <ul className="space-y-1 text-xs">
+                            <li>• 如果你是简历所有者,密钥在创建简历时显示</li>
+                            <li>• 如果你已保存到本地,刷新页面会自动填充</li>
+                            <li>• 如果是 HR,请向简历所有者索取密钥</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        加密密钥 *
+                      </label>
+                      <div className="flex gap-3">
+                        <textarea
+                          value={decryptKey}
+                          onChange={(e) => setDecryptKey(e.target.value)}
+                          placeholder="请粘贴您的加密密钥..."
+                          rows={4}
+                          className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm resize-none"
+                        />
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            setShowDecryptModal(false);
+                            setSelectedResume(null);
+                            setDecryptKey('');
+                          }}
+                          className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+                        >
+                          返回列表
+                        </button>
+                        <button
+                          onClick={() => handleDecryptResume(selectedResume)}
+                          disabled={!decryptKey.trim() || isDecrypting}
+                          className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+                        >
+                          {isDecrypting ? '解密中...' : '解密'}
+                        </button>
+                      </div>
+                      
+                      <p className="text-xs text-gray-500 text-center">
+                        💡 提示: 如果您在创建简历时选择保存密钥到本地,则无需手动输入。如果忘记密钥,将无法恢复简历内容。
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 解密中状态 */}
+                {isDecrypting && (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-600 mb-4"></div>
+                    <p className="text-gray-700 font-medium">
+                      {selectedResume.encryption_type === 'seal' 
+                        ? '正在验证访问权限并解密...' 
+                        : '正在解密简历...'}
+                    </p>
+                  </div>
+                )}
+
+                {/* 错误提示 */}
+                {error && (
+                  <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">⚠️</span>
+                      <div>
+                        <h4 className="font-bold text-red-900 mb-1">解密失败</h4>
+                        <p className="text-red-700 text-sm">{error}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 解密成功，显示完整简历 */}
+                {decryptedData && (
+                  <div className="space-y-6">
+                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 flex items-center gap-3">
+                      <span className="text-2xl">✅</span>
+                      <div>
+                        <h4 className="font-bold text-green-900">解密成功</h4>
+                        <p className="text-green-700 text-sm">简历内容已成功解密</p>
+                      </div>
+                    </div>
+
+                    {/* 基本信息 */}
+                    <div className="bg-gray-50 rounded-lg p-6">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">📋 基本信息</h3>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">姓名：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.name || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">性别：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.gender || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">年龄：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.age || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">联系方式：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.contact || decryptedData.phone || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">邮箱：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.email || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">所在地：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.location || '未提供'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 求职意向 */}
+                    <div className="bg-gray-50 rounded-lg p-6">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">🎯 求职意向</h3>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">职位：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.title || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">期望薪资：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.expected_salary || decryptedData.salary || '面议'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 工作经验 */}
+                    {decryptedData.experience && (
+                      <div className="bg-gray-50 rounded-lg p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">💼 工作经验</h3>
+                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
+                          {decryptedData.experience}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 技能 */}
+                    {decryptedData.skills && (
+                      <div className="bg-gray-50 rounded-lg p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">🛠️ 技能专长</h3>
+                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
+                          {decryptedData.skills}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 教育背景 */}
+                    {decryptedData.education && (
+                      <div className="bg-gray-50 rounded-lg p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">🎓 教育背景</h3>
+                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
+                          {decryptedData.education}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 项目经验 */}
+                    {decryptedData.projects && (
+                      <div className="bg-gray-50 rounded-lg p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">🚀 项目经验</h3>
+                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
+                          {decryptedData.projects}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 自我评价 */}
+                    {decryptedData.self_evaluation && (
+                      <div className="bg-gray-50 rounded-lg p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">✨ 自我评价</h3>
+                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
+                          {decryptedData.self_evaluation}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 如果是 Seal 加密且未开始解密 */}
+                {selectedResume.encryption_type === 'seal' && !decryptedData && !isDecrypting && !error && (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🔒</div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Seal 加密简历</h3>
+                    <p className="text-gray-600 mb-4">
+                      该简历使用 Seal 阈值加密技术保护,访问权限由链上 Allowlist 控制
+                    </p>
+                    
+                    <div className="max-w-md mx-auto mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-left">
+                      <p className="font-semibold text-blue-900 mb-2">✨ Seal 加密特点:</p>
+                      <ul className="space-y-1 text-blue-700">
+                        <li>• 无需手动输入密钥</li>
+                        <li>• 系统自动验证您的访问权限</li>
+                        <li>• 只有白名单中的地址才能解密</li>
+                        <li>• 密钥由多个服务器分布式管理</li>
+                      </ul>
+                    </div>
+
+                    <button
+                      onClick={() => handleDecryptResume(selectedResume)}
+                      className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 font-medium transition-colors text-lg"
+                    >
+                      🔓 验证权限并解密
+                    </button>
+                    
+                    <p className="text-xs text-gray-500 mt-4">
+                      点击按钮后,系统将自动创建 SessionKey 并验证您的访问权限
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </PageLayout>
   );

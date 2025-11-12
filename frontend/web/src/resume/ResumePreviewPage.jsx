@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction, useSignPersonalMessage } from '@mysten/dapp-kit';
 import PageLayout from '../layout/PageLayout';
 import ResumePreview from './ResumePreview';
 import { resumeService } from '../services';
-import { downloadEncryptedResume } from '../utils/ipfs';
-import { downloadAndDecryptResume } from '../utils/crypto';
+import { getSealClient, downloadAndDecryptResume } from '../utils/sealClient';
+import { decryptWithSeal } from '../utils/seal';
+import { downloadFromWalrus } from '../utils/walrus';
 
 export default function ResumePreviewPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const currentAccount = useCurrentAccount();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const connected = !!currentAccount;
   const publicKey = currentAccount?.address;
   const [formData, setFormData] = useState(null);
@@ -19,6 +22,10 @@ export default function ResumePreviewPage() {
   const [needsKey, setNeedsKey] = useState(false);
   const [encryptionKey, setEncryptionKey] = useState('');
   const [isDecrypting, setIsDecrypting] = useState(false);
+  
+  // Seal 相关状态
+  const [encryptionType, setEncryptionType] = useState('simple');
+  const [policyObjectId, setPolicyObjectId] = useState(null);
 
   useEffect(() => {
     if (!connected || !publicKey) {
@@ -39,34 +46,55 @@ export default function ResumePreviewPage() {
       
       console.log('加载的简历数据:', resume);
       
-      // 检查是否有 IPFS CID（表示加密简历）
-      const ipfsCid = resume.ipfs_cid || resume.cid;
+      // 保存加密类型和策略对象ID
+      const encType = resume.encryption_type || 'simple';
+      const policyId = resume.policy_object_id;
+      setEncryptionType(encType);
+      setPolicyObjectId(policyId);
       
-      if (!ipfsCid) {
-        // 没有 CID，说明是旧版本未加密的简历，直接显示
-        console.log('⚠️ 未加密的简历，直接显示',ipfsCid);
+      // 检查是否有 IPFS CID 或 blob_id（表示加密简历）
+      const ipfsCid = resume.ipfs_cid || resume.cid;
+      const blobId = resume.blob_id;
+      
+      if (!ipfsCid && !blobId) {
+        // 没有 CID/blob_id，说明是旧版本未加密的简历，直接显示
+        console.log('⚠️ 未加密的简历，直接显示');
         setFormData(transformResumeData(resume));
         setIsLoading(false);
         return;
       }
       
-      console.log('🔐 检测到加密简历，CID:', ipfsCid);
+      console.log('🔐 检测到加密简历，类型:', encType, 'ID:', blobId || ipfsCid);
       
-      // 1. 尝试从 localStorage 读取密钥
-      const savedKeys = JSON.parse(localStorage.getItem('resumeEncryptionKeys') || '{}');
-      let key = savedKeys[id];
-      
-      if (!key) {
-        console.log('⚠️ 本地未找到密钥，需要用户输入');
-        setNeedsKey(true);
-        setIsLoading(false);
-        return;
+      if (encType === 'seal') {
+        // Seal 加密：需要验证 Allowlist 并使用 SessionKey
+        if (!blobId || !resume.encryption_id || !policyId) {
+          throw new Error('Seal 加密简历信息不完整');
+        }
+        
+        console.log('🔒 Seal 加密简历，开始解密流程...');
+        await decryptSealResume(blobId, resume.encryption_id, policyId);
+        
+      } else {
+        // 简单加密：使用本地密钥
+        const storageId = blobId || ipfsCid;
+        
+        // 1. 尝试从 localStorage 读取密钥
+        const savedKeys = JSON.parse(localStorage.getItem('resumeEncryptionKeys') || '{}');
+        let key = savedKeys[id];
+        
+        if (!key) {
+          console.log('⚠️ 本地未找到密钥，需要用户输入');
+          setNeedsKey(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('✅ 找到本地密钥，开始解密...');
+        
+        // 2. 下载并解密
+        await decryptAndLoadResume(storageId, key);
       }
-      
-      console.log('✅ 找到本地密钥，开始解密...');
-      
-      // 2. 下载并解密
-      await decryptAndLoadResume(ipfsCid, key);
       
     } catch (err) {
       console.error('加载简历失败:', err);
@@ -75,9 +103,82 @@ export default function ResumePreviewPage() {
       if (err.message.includes('Unauthorized')) {
         alert('无权查看此简历');
         navigate('/resumes');
+      } else if (err.message.includes('NoAccess')) {
+        alert('您不在简历的访问白名单中');
+        navigate('/resumes');
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const decryptSealResume = async (blobId, encryptionId, policyObjectId) => {
+    try {
+      setIsDecrypting(true);
+      
+      if (!currentAccount) {
+        throw new Error('请先连接钱包');
+      }
+      
+      console.log('📝 创建 SessionKey...', {
+        blobId,
+        encryptionId,
+        policyObjectId
+      });
+      
+      // 1. 创建 SessionKey
+      const { SessionKey } = await import('@mysten/seal');
+      const { getSuiClient } = await import('../utils/sealClient');
+      const { SEAL_CONFIG } = await import('../config/seal.config');
+      
+      const suiClient = getSuiClient();
+      
+      const sessionKey = await SessionKey.create({
+        address: currentAccount.address,
+        packageId: SEAL_CONFIG.packageId,
+        ttlMin: 10, // 10 分钟有效期 (Seal 限制 1-30)
+        suiClient,
+      });
+      
+      // 2. 签名 SessionKey
+      console.log('✍️ 请在钱包中签名 SessionKey...');
+      const personalMessage = sessionKey.getPersonalMessage();
+      
+      const result = await signPersonalMessage({
+        message: personalMessage,
+      });
+      
+      await sessionKey.setPersonalMessageSignature(result.signature);
+      console.log('✅ SessionKey 创建并签名成功');
+
+      try {
+        // 3. 下载并解密
+        console.log('📥 下载并解密 Seal 简历...');
+        const decrypted = await downloadAndDecryptResume(
+          blobId,
+          sessionKey,
+          policyObjectId
+        );
+        
+        console.log('✅ Seal 解密成功:', decrypted);
+        
+        // 4. 转换为表单格式
+        setFormData(transformResumeData(decrypted));
+        setNeedsKey(false);
+      } catch (err) {
+        console.error('❌ Seal 解密失败:', err);
+        if (err.message.includes('NoAccess') || err.message.includes('无权访问')) {
+          throw new Error('您不在简历的访问白名单中');
+        } else {
+          throw new Error(`Seal 解密失败: ${err.message}`);
+        }
+      }
+      
+    } catch (err) {
+      console.error('Seal 解密流程失败:', err);
+      throw err;
+    } finally {
+      setIsDecrypting(false);
     }
   };
 
@@ -85,12 +186,12 @@ export default function ResumePreviewPage() {
     try {
       setIsDecrypting(true);
       
-      console.log('📥 下载加密数据...');
-      const encryptedBlob = await downloadEncryptedResume(cid);
+      console.log('📥 从 Walrus 下载加密数据...');
+      const encryptedBlob = await downloadFromWalrus(cid);
       console.log('✅ 下载完成:', encryptedBlob.size, 'bytes');
       
-      console.log('🔓 解密中...');
-      const decryptedData = await downloadAndDecryptResume(encryptedBlob, key);
+      console.log('🔓 使用简单加密解密中...');
+      const decryptedData = await decryptWithSeal(encryptedBlob, key);
       console.log('✅ 解密成功:', decryptedData);
       
       // 3. 转换为前端格式
@@ -127,9 +228,9 @@ export default function ResumePreviewPage() {
     try {
       const owner = publicKey;
       const resume = await resumeService.getResumeDetail(id, owner);
-      const ipfsCid = resume.ipfs_cid || resume.cid;
+      const storageId = resume.blob_id || resume.ipfs_cid || resume.cid;
       
-      await decryptAndLoadResume(ipfsCid, encryptionKey.trim());
+      await decryptAndLoadResume(storageId, encryptionKey.trim());
       
       // 解密成功后，询问是否保存密钥
       const shouldSave = window.confirm(
@@ -198,8 +299,8 @@ export default function ResumePreviewPage() {
     );
   }
 
-  // 需要输入密钥
-  if (needsKey) {
+  // 需要输入密钥（仅简单加密模式）
+  if (needsKey && encryptionType !== 'seal') {
     return (
       <PageLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -208,7 +309,7 @@ export default function ResumePreviewPage() {
               <div className="text-6xl mb-4">🔐</div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">需要加密密钥</h2>
               <p className="text-gray-600">
-                此简历已加密，请输入密钥以查看内容
+                此简历已使用简单加密保护，请输入密钥以查看内容
               </p>
             </div>
             
@@ -249,6 +350,23 @@ export default function ResumePreviewPage() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // Seal 加密自动解密中
+  if (needsKey && encryptionType === 'seal') {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="text-6xl mb-4 animate-pulse">🔒</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Seal 加密简历</h2>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
+            <p className="text-gray-600">正在验证访问权限并解密...</p>
+            <p className="text-sm text-gray-500 mt-2">请稍候，这可能需要几秒钟</p>
           </div>
         </div>
       </PageLayout>

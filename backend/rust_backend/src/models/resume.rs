@@ -84,7 +84,15 @@ pub struct Resume {
     pub created_at: i64,
     pub updated_at: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ipfs_cid: Option<String>, // IPFS CID for encrypted resume
+    pub ipfs_cid: Option<String>, // 已废弃，使用 blob_id
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blob_id: Option<String>, // Walrus Blob ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encryption_id: Option<String>, // Seal 加密 ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub policy_object_id: Option<String>, // Seal Policy Object ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encryption_type: Option<String>, // "simple" 或 "seal"
 }
 
 /// 包含价格的简历（用于"我的简历"列表）
@@ -110,7 +118,15 @@ pub struct MyResumeSummary {
     pub unlock_count: i32,
     pub status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ipfs_cid: Option<String>,
+    pub ipfs_cid: Option<String>, // 已废弃
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blob_id: Option<String>, // Walrus Blob ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encryption_id: Option<String>, // Seal 加密 ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub policy_object_id: Option<String>, // Seal Policy Object ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encryption_type: Option<String>, // "simple" 或 "seal"
 }
 
 /// 简历摘要（公开信息）
@@ -139,7 +155,12 @@ pub struct SetPriceRequest {
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreateResumeRequest {
     pub owner: String,
-    pub ipfs_cid: Option<String>,  // 新增：前端上传后的 CID（可选，用于前端加密方案）
+    pub ipfs_cid: Option<String>,  // 已废弃，使用 blob_id
+    pub blob_id: Option<String>,   // Walrus Blob ID
+    pub encryption_key: Option<String>,  // 简单加密的密钥（Seal 加密时为 None）
+    pub encryption_id: Option<String>,   // Seal 加密 ID
+    pub policy_object_id: Option<String>, // Seal Policy Object ID
+    pub encryption_type: Option<String>,  // "simple" 或 "seal"
     pub personal: PersonalInfo,
     pub skills: String,
     pub desired_position: DesiredPosition,

@@ -14,19 +14,19 @@ pub struct Model {
     /// 购买者用户 ID
     pub buyer_id: i64,
     
-    /// 购买者钱包地址
-    #[sea_orm(column_type = "String(StringLen::N(44))")]
+    /// 购买者钱包地址 - 支持 Sui/Solana
+    #[sea_orm(column_type = "String(StringLen::N(100))")]
     pub buyer_wallet: String,
     
-    /// 卖家钱包地址
-    #[sea_orm(column_type = "String(StringLen::N(44))")]
+    /// 卖家钱包地址 - 支持 Sui/Solana
+    #[sea_orm(column_type = "String(StringLen::N(100))")]
     pub seller_wallet: String,
     
-    /// 支付金额 (lamports)
+    /// 支付金额 (lamports 或其他单位)
     pub amount: i64,
     
-    /// 交易签名
-    #[sea_orm(unique, column_type = "String(StringLen::N(88))")]
+    /// 交易签名 - 支持 Sui/Solana
+    #[sea_orm(unique, column_type = "String(StringLen::N(150))")]
     pub transaction_signature: String,
     
     /// 支付状态: pending(待确认), confirmed(已确认), failed(失败)

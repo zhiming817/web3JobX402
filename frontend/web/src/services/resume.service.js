@@ -5,6 +5,12 @@ import { httpClient } from './http.client';
 import { API_ENDPOINTS } from './api.config';
 import { encryptWithSeal, decryptWithSeal } from '../utils/seal';
 import { uploadToWalrus, downloadFromWalrus } from '../utils/walrus';
+import { 
+  encryptAndUploadResume, 
+  downloadAndDecryptResume,
+  createPublishTransaction,
+  createAddToAllowlistTransaction 
+} from '../utils/sealClient';
 
 /**
  * 简历 API 服务类
@@ -52,8 +58,11 @@ class ResumeService {
       // 3. 调用后端 API，传递 Blob ID
       const response = await httpClient.post(API_ENDPOINTS.resumes.create, {
         ...resumeData,
-        ipfs_cid: blobId,  // 使用 blob_id 替代 ipfs_cid (后端字段兼容)
-        encryption_salt: salt,  // 保存 salt 用于解密
+        blob_id: blobId,           // 使用 blob_id
+        encryption_type: 'simple', // 明确标记为简单加密
+        encryption_key: null,      // 密钥不存储在后端，由前端管理
+        encryption_id: null,       // 简单加密不使用
+        policy_object_id: null,    // 简单加密不使用
       });
       
       if (response.success) {
@@ -274,6 +283,145 @@ class ResumeService {
       return resumeData;
     } catch (error) {
       console.error('下载或解密简历失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 使用 Seal 加密并上传简历 (带访问控制)
+   * @param {object} resumeData - 简历数据
+   * @param {string} policyObjectId - 策略对象 ID (allowlist ID)
+   * @returns {Promise<object>} { success, resumeId, blobId, encryptionId }
+   */
+  async createResumeWithSeal(resumeData, policyObjectId) {
+    try {
+      console.log('🔐 Creating resume with Seal encryption...');
+      
+      // 1. 使用 Seal 加密并上传到 Walrus
+      const { blobId, encryptionId, url } = await encryptAndUploadResume(resumeData, policyObjectId);
+      
+      console.log('📤 Saving to backend...');
+      
+      // 2. 调用后端 API
+      const response = await httpClient.post(API_ENDPOINTS.resumes.create, {
+        ...resumeData,
+        blob_id: blobId,           // 使用 blob_id 而不是 ipfs_cid
+        encryption_id: encryptionId,
+        policy_object_id: policyObjectId,
+        encryption_type: 'seal',   // 明确标记为 Seal 加密
+        encryption_key: null,      // Seal 加密不需要存储密钥
+      });
+      
+      if (response.success) {
+        console.log('✅ Resume created successfully with Seal!');
+        
+        return {
+          success: true,
+          resumeId: response.data,
+          blobId,
+          encryptionId,
+          policyObjectId,
+          message: '简历创建成功 (Seal 加密)',
+        };
+      } else {
+        throw new Error(response.error || '创建简历失败');
+      }
+    } catch (error) {
+      console.error('创建简历失败 (Seal):', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 使用 Seal 下载并解密简历 (带访问控制)
+   * @param {string} blobId - Walrus blob ID
+   * @param {SessionKey} sessionKey - Seal 会话密钥
+   * @param {string} policyObjectId - 策略对象 ID
+   * @returns {Promise<object>} 解密后的简历数据
+   */
+  async downloadResumeWithSeal(blobId, sessionKey, policyObjectId) {
+    try {
+      return await downloadAndDecryptResume(blobId, sessionKey, policyObjectId);
+    } catch (error) {
+      console.error('下载简历失败 (Seal):', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 关联 Blob 到 Allowlist
+   * @param {string} allowlistId - Allowlist 对象 ID
+   * @param {string} capId - Cap 对象 ID  
+   * @param {string} blobId - Walrus Blob ID
+   * @param {Function} signAndExecute - Sui 交易签名和执行函数
+   * @returns {Promise<object>} 关联结果
+   */
+  async publishBlobToAllowlist(allowlistId, capId, blobId, signAndExecute) {
+    try {
+      console.log('📎 Publishing blob to allowlist...');
+      
+      const tx = createPublishTransaction(allowlistId, capId, blobId);
+      
+      return new Promise((resolve, reject) => {
+        signAndExecute(
+          { transaction: tx },
+          {
+            onSuccess: (result) => {
+              console.log('✅ Blob published to allowlist');
+              resolve({
+                success: true,
+                txDigest: result.digest,
+                message: 'Blob 已关联到 Allowlist',
+              });
+            },
+            onError: (error) => {
+              console.error('❌ Failed to publish blob:', error);
+              reject(error);
+            },
+          }
+        );
+      });
+    } catch (error) {
+      console.error('关联 Blob 失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 添加地址到简历访问白名单
+   * @param {string} allowlistId - Allowlist 对象 ID
+   * @param {string} capId - Cap 对象 ID
+   * @param {string} address - 要添加的地址
+   * @param {Function} signAndExecute - Sui 交易签名和执行函数
+   * @returns {Promise<object>} 添加结果
+   */
+  async addToResumeAllowlist(allowlistId, capId, address, signAndExecute) {
+    try {
+      console.log('➕ Adding address to allowlist...');
+      
+      const tx = createAddToAllowlistTransaction(allowlistId, capId, address);
+      
+      return new Promise((resolve, reject) => {
+        signAndExecute(
+          { transaction: tx },
+          {
+            onSuccess: (result) => {
+              console.log('✅ Address added to allowlist');
+              resolve({
+                success: true,
+                txDigest: result.digest,
+                message: '地址已添加到访问白名单',
+              });
+            },
+            onError: (error) => {
+              console.error('❌ Failed to add address:', error);
+              reject(error);
+            },
+          }
+        );
+      });
+    } catch (error) {
+      console.error('添加地址失败:', error);
       throw error;
     }
   }

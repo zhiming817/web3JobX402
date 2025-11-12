@@ -8,8 +8,8 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
     
-    /// 钱包地址（唯一标识）
-    #[sea_orm(unique, column_type = "String(StringLen::N(44))")]
+    /// 钱包地址（唯一标识）- 支持 Sui/Solana
+    #[sea_orm(unique, column_type = "String(StringLen::N(100))")]
     pub wallet_address: String,
     
     /// 用户昵称
