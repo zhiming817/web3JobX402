@@ -123,6 +123,21 @@ export default function ResumeCreate() {
         
         console.log('✅ Seal 加密创建成功:', result);
         
+        // 自动将创建者添加到 Allowlist
+        console.log('👤 自动添加创建者到 Allowlist...');
+        try {
+          await resumeService.addToResumeAllowlist(
+            allowlistId,
+            capId,
+            walletAddress,
+            signAndExecute
+          );
+          console.log('✅ 创建者已添加到 Allowlist');
+        } catch (addError) {
+          console.warn('添加创建者到 Allowlist 失败 (可能已存在):', addError);
+          // 如果添加失败（可能已存在），继续执行
+        }
+        
         // 关联 Blob 到 Allowlist
         console.log('📎 关联 Blob 到 Allowlist...');
         await resumeService.publishBlobToAllowlist(
@@ -138,6 +153,7 @@ export default function ResumeCreate() {
           `Blob ID: ${result.blobId}\n` +
           `Encryption ID: ${result.encryptionId}\n\n` +
           `✨ 您的简历已使用 Seal 加密保护\n` +
+          `✅ 您已自动添加到访问白名单\n` +
           `访问权限由 Allowlist 控制\n` +
           `Allowlist ID: ${allowlistId}`
         );
@@ -363,6 +379,7 @@ export default function ResumeCreate() {
                           <li>✅ 通过链上 Allowlist 控制访问权限</li>
                           <li>✅ 支持动态添加/移除访问者</li>
                           <li>✅ 适合付费解锁、订阅等商业场景</li>
+                          <li>✅ 创建后您会自动添加到白名单</li>
                           <li>⚠️ 需要先创建 Allowlist（一次性操作）</li>
                         </ul>
                         <div className="mt-3 flex gap-2">
