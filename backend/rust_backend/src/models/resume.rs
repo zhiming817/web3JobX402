@@ -100,7 +100,7 @@ pub struct Resume {
 pub struct ResumeWithPrice {
     #[serde(flatten)]
     pub resume: Resume,
-    pub price: i64, // 价格（lamports）
+    pub price: i64, // 价格（USDC 最小单位，6 decimals）
     pub view_count: i32,
     pub unlock_count: i32,
     pub status: String,
@@ -143,12 +143,28 @@ pub struct ResumeSummary {
     pub owner: String,
 }
 
+/// 简历列表摘要（用于公开列表展示，简化版本）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResumeListItem {
+    pub id: String,
+    pub owner: String,
+    pub price: i64, // 价格（USDC 最小单位，6 decimals）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub policy_object_id: Option<String>, // Seal Policy Object ID (Allowlist ID 或 Service ID)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encryption_id: Option<String>, // Seal 加密 ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encryption_type: Option<String>, // "simple" 或 "seal"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blob_id: Option<String>, // Walrus Blob ID
+}
+
 /// 设置简历价格请求
 #[derive(Debug, Clone, Deserialize)]
 pub struct SetPriceRequest {
     pub resume_id: String,
     pub owner: String,
-    pub price: u64, // 价格，单位：lamports (1 SOL = 1_000_000_000 lamports)
+    pub price: u64, // 价格，单位：USDC 最小单位 (1 USDC = 1_000_000 micro-units, 6 decimals)
 }
 
 /// 简历创建请求

@@ -1,4 +1,4 @@
-use crate::models::{Resume, ResumeSummary, CreateResumeRequest, ResumeWithPrice, MyResumeSummary};
+use crate::models::{Resume, ResumeSummary, CreateResumeRequest, ResumeWithPrice, MyResumeSummary, ResumeListItem};
 use crate::dao::ResumeDao;
 use crate::services::UserService;
 use sea_orm::DatabaseConnection;
@@ -60,19 +60,40 @@ impl ResumeService {
         db: &DatabaseConnection,
         page: u64,
         page_size: u64
-    ) -> Result<Vec<ResumeSummary>, String> {
+    ) -> Result<Vec<ResumeListItem>, String> {
+        println!("📋 get_resume_summaries called with page={}, page_size={}", page, page_size);
+        
         let (resumes, _total) = ResumeDao::find_all_active(db, page, page_size)
             .await
             .map_err(|e| format!("Failed to fetch resumes: {}", e))?;
         
-        // 转换为摘要
-        let summaries: Vec<ResumeSummary> = resumes.iter()
-            .filter_map(|r| {
-                serde_json::from_value(r.summary.clone()).ok()
+        println!("📦 Retrieved {} resumes from DAO", resumes.len());
+        
+        // 只返回基本信息和加密字段，不解密详细内容
+        // 详细内容应该通过 Seal 从 Walrus 解密获取
+        let list_items: Vec<ResumeListItem> = resumes.iter()
+            .map(|r| ResumeListItem {
+                id: r.resume_id.clone(),
+                owner: r.owner_wallet.clone(),
+                price: r.price,
+                policy_object_id: r.policy_object_id.clone(),
+                encryption_id: r.encryption_id.clone(),
+                encryption_type: if r.encryption_type.is_empty() {
+                    None
+                } else {
+                    Some(r.encryption_type.clone())
+                },
+                blob_id: if r.blob_id.is_empty() {
+                    None
+                } else {
+                    Some(r.blob_id.clone())
+                },
             })
             .collect();
         
-        Ok(summaries)
+        println!("✅ Returning {} list items", list_items.len());
+        
+        Ok(list_items)
     }
 
     /// 获取我的简历（只返回摘要信息）
