@@ -241,7 +241,7 @@ public fun publish(allowlist: &mut Allowlist, cap: &Cap, blob_id: String, ctx: &
 // 旧签名
 public fun publish(service: &mut Service, cap: &Cap, blob_id: String)
 
-// 新签名 (添加了 ctx 参数)
+// 新签名 (c)
 public fun publish(service: &mut Service, cap: &Cap, blob_id: String, ctx: &TxContext)
 ```
 
