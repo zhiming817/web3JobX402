@@ -124,7 +124,7 @@ export async function encryptAndUploadResume(resumeData, policyObjectId) {
  * @param {string} policyObjectId - 策略对象 ID (allowlist ID)
  * @returns {Promise<object>} 解密后的简历数据
  */
-export async function downloadAndDecryptResume(blobId, sessionKey, policyObjectId) {
+export async function downloadAndDecryptResume(blobId, sessionKey, policyObjectId, moveCallConstructor) {
   try {
     console.log('📥 Step 1: Downloading from Walrus...');
     
@@ -148,15 +148,24 @@ export async function downloadAndDecryptResume(blobId, sessionKey, policyObjectI
     
     console.log('🔑 Encryption ID:', fullId);
     
-    // 构建访问控制交易
+    // 使用传入的 moveCallConstructor 构建访问控制交易
     const tx = new Transaction();
-    tx.moveCall({
-      target: getSealTarget('seal_approve'),
-      arguments: [
-        tx.pure.vector('u8', Array.from(fromHex(fullId))),
-        tx.object(policyObjectId),
-      ],
-    });
+    
+    if (moveCallConstructor) {
+      // 订阅模式：使用 subscription::seal_approve
+      console.log('🔐 使用订阅模式验证访问权限...');
+      moveCallConstructor(tx, fullId);
+    } else {
+      // 白名单模式：使用 allowlist::seal_approve
+      console.log('🔐 使用白名单模式验证访问权限...');
+      tx.moveCall({
+        target: getSealTarget('seal_approve'),
+        arguments: [
+          tx.pure.vector('u8', Array.from(fromHex(fullId))),
+          tx.object(policyObjectId),
+        ],
+      });
+    }
     
     const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
     

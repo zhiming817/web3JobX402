@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useCurrentAccount, useSignAndExecuteTransaction, useSignPersonalMessage } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction, useSignPersonalMessage, useSuiClient } from '@mysten/dapp-kit';
 import PageLayout from '../layout/PageLayout';
 import { resumeService } from '../services';
 import { getSealClient, downloadAndDecryptResume } from '../utils/sealClient';
 import { decryptWithSeal } from '../utils/seal';
 import { downloadFromWalrus } from '../utils/walrus';
+import { 
+  purchaseSubscriptionTx, 
+  getUserSubscriptions, 
+  getServiceDetails,
+  isSubscriptionValid,
+  constructSubscriptionApprove 
+} from '../utils/subscription';
+import { SUBSCRIPTION_PACKAGE_ID } from '../config/subscription.config';
 
 export default function ResumeBrowse() {
   const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const connected = !!currentAccount;
@@ -22,6 +31,10 @@ export default function ResumeBrowse() {
   const [decryptedData, setDecryptedData] = useState(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [decryptKey, setDecryptKey] = useState('');
+  
+  // 订阅相关状态
+  const [userSubscriptions, setUserSubscriptions] = useState([]);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   const [filters, setFilters] = useState({
     keyword: '',
@@ -35,6 +48,37 @@ export default function ResumeBrowse() {
     loadResumeSummaries();
   }, []);
 
+  // 加载用户订阅
+  useEffect(() => {
+    if (connected && publicKey) {
+      loadUserSubscriptions();
+    }
+  }, [connected, publicKey]);
+
+  const loadUserSubscriptions = async () => {
+    try {
+      console.log('🔄 开始加载用户订阅列表...');
+      const subscriptions = await getUserSubscriptions(
+        suiClient,
+        publicKey,
+        SUBSCRIPTION_PACKAGE_ID
+      );
+      console.log('📦 用户订阅列表:', subscriptions);
+      console.log('📦 订阅数量:', subscriptions.length);
+      subscriptions.forEach((sub, index) => {
+        console.log(`📦 订阅 ${index + 1}:`, {
+          id: sub.id,
+          service_id: sub.service_id,
+          created_at: new Date(sub.created_at).toLocaleString()
+        });
+      });
+      setUserSubscriptions(subscriptions);
+      console.log('✅ 订阅列表加载完成');
+    } catch (err) {
+      console.error('❌ 加载订阅列表失败:', err);
+    }
+  };
+
   const loadResumeSummaries = async () => {
     setLoading(true);
     setError(null);
@@ -42,32 +86,41 @@ export default function ResumeBrowse() {
     try {
       const data = await resumeService.getResumeSummaries();
       
+      console.log('📋 后端返回的简历数据:', data);
+      
       // 转换后端数据为前端格式
+      // 注意：对于 Seal 加密的简历，详细信息需要解密后才能获取
       const formattedResumes = data.map(resume => {
-        // 直接使用 resume 的字段，不需要通过 summary
-        const personal = resume.personal || {};
-        const desiredPosition = resume.desired_position || {};
+        const isSealed = resume.encryption_type === 'seal';
         
         return {
-          id: resume.id, // 使用 id 而不是 resume_id
+          id: resume.id,
           resumeId: resume.id,
-          name: personal.name || '未知',
-          title: desiredPosition.position || '未填写职位',
-          experience: calculateExperience(personal.work_start_date),
-          education: getEducationLevel(resume.education),
-          jobStatus: personal.job_status || '未知',
-          location: desiredPosition.city || '未知',
-          salary: formatSalary(desiredPosition.salary_min, desiredPosition.salary_max),
-          skills: (resume.skills || '').split(',').map(s => s.trim()).filter(Boolean),
-          highlights: resume.skills || '暂无介绍',
-          price: ((resume.price || 0) / 1_000_000_000).toFixed(4) + ' SOL',
+          // Seal 加密的简历在列表中显示占位符
+          name: isSealed ? '🔐 加密简历' : '未知',
+          title: isSealed ? '需要订阅查看' : '未填写职位',
+          experience: isSealed ? '-' : '未知',
+          education: isSealed ? '-' : '未知',
+          jobStatus: isSealed ? '-' : '未知',
+          location: isSealed ? '-' : '未知',
+          salary: isSealed ? '-' : '-',
+          skills: isSealed ? ['订阅后可见'] : [],
+          highlights: isSealed ? '🔒 此简历使用 Seal 加密，购买订阅后可查看完整内容' : '暂无介绍',
+          price: ((resume.price || 0) / 1_000_000).toFixed(2) + ' USDC',
           priceRaw: resume.price || 0,
           isLocked: true,
-          avatar: getAvatar(personal.gender),
-          viewCount: resume.view_count || 0,
-          unlockCount: resume.unlock_count || 0,
+          avatar: '/default-avatar.png',
+          viewCount: 0,
+          unlockCount: 0,
           ownerWallet: resume.owner,
-          rawData: resume,
+          rawData: {
+            ...resume,
+            // 确保加密字段存在
+            encryption_type: resume.encryption_type,
+            encryption_id: resume.encryption_id,
+            policy_object_id: resume.policy_object_id,
+            blob_id: resume.blob_id,
+          },
         };
       });
 
@@ -129,32 +182,132 @@ export default function ResumeBrowse() {
     const resume = resumes.find(r => r.resumeId === resumeId);
     if (!resume) return;
 
+    // 检查是否已订阅
+    const hasSubscription = userSubscriptions.some(
+      sub => sub.service_id === resume.rawData.policy_object_id
+    );
+    
+    if (hasSubscription) {
+      alert('您已购买此简历的访问权限！');
+      await handleViewResume({ ...resume, isLocked: false });
+      return;
+    }
+
     const confirmed = window.confirm(
-      `解锁简历需要支付 ${resume.price}\n\n支付将通过 x402 直接转账给简历所有者。\n\n确定要解锁吗？`
+      `购买简历访问权限需要支付 ${resume.price}\n\n✅ 支付后可永久查看此简历\n✅ 支付直接转给简历所有者\n\n确定要购买吗？`
     );
 
-    if (confirmed) {
-      try {
-        const buyerWallet = publicKey.toString();
-        const result = await resumeService.unlockResume(resumeId, buyerWallet);
-        
-        console.log('解锁成功:', result);
-        alert('简历解锁成功！');
-        
-        // 更新本地状态
-        setResumes(resumes.map(r => 
-          r.resumeId === resumeId ? { ...r, isLocked: false } : r
-        ));
-        
-        // 解锁后自动打开查看
-        const unlockedResume = resumes.find(r => r.resumeId === resumeId);
-        if (unlockedResume) {
-          handleViewResume({ ...unlockedResume, isLocked: false });
-        }
-      } catch (err) {
-        console.error('解锁失败:', err);
-        alert(`解锁失败: ${err.message}\n\n这可能是因为：\n1. 需要真实的 x402 支付\n2. 钱包余额不足\n3. 网络错误`);
+    if (!confirmed) return;
+
+    setIsPurchasing(true);
+    try {
+      console.log('📋 开始购买订阅...');
+      console.log('简历 ID:', resumeId);
+      console.log('Service ID (policy_object_id):', resume.rawData.policy_object_id);
+      console.log('价格:', resume.priceRaw);
+
+      // 1. 获取服务详情（验证服务存在）
+      const serviceDetails = await getServiceDetails(
+        suiClient,
+        resume.rawData.policy_object_id
+      );
+      
+      if (!serviceDetails) {
+        throw new Error('简历服务不存在，请联系简历所有者');
       }
+      
+      console.log('✅ 服务详情:', serviceDetails);
+
+      // 2. 准备支付
+      // 重要：必须使用服务对象中的 fee，而不是简历的 price！
+      // 智能合约会验证：fee.value() == service.fee
+      const serviceFee = serviceDetails.fee; // 服务对象中的实际 fee
+      
+      console.log('💰 支付金额对比:', {
+        简历价格: resume.priceRaw,
+        服务费用: serviceFee,
+        使用金额: serviceFee,
+      });
+      
+      const tx = purchaseSubscriptionTx({
+        serviceId: resume.rawData.policy_object_id,
+        fee: serviceFee, // 使用服务的实际 fee
+        buyerAddress: publicKey,
+      });
+
+      // 3. 执行交易
+      console.log('💰 正在执行支付交易...');
+      
+      signAndExecute(
+        {
+          transaction: tx,
+        },
+        {
+          onSuccess: async (result) => {
+            console.log('✅ 支付成功:', result);
+            
+            // 4. 重新加载订阅列表（带重试，等待区块链索引）
+            console.log('🔄 购买成功，正在重新加载订阅列表...');
+            
+            let retries = 0;
+            const maxRetries = 5;
+            let subscriptions = [];
+            
+            while (retries < maxRetries) {
+              await loadUserSubscriptions();
+              
+              // 等待 state 更新
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              // 检查是否找到新订阅
+              const hasNewSubscription = userSubscriptions.some(
+                sub => sub.service_id === resume.rawData?.policy_object_id
+              );
+              
+              if (hasNewSubscription || userSubscriptions.length > 0) {
+                console.log(`✅ 第 ${retries + 1} 次尝试：找到订阅`);
+                break;
+              }
+              
+              retries++;
+              console.log(`⏳ 第 ${retries} 次尝试：未找到订阅，${retries < maxRetries ? '继续重试...' : '放弃重试'}`);
+              
+              if (retries < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 2000)); // 等待2秒再重试
+              }
+            }
+            
+            // 5. 更新简历状态
+            setResumes(resumes.map(r => 
+              r.resumeId === resumeId ? { ...r, isLocked: false } : r
+            ));
+            
+            // 订阅模式不需要调用后端 unlockResume 接口
+            // 订阅信息已经在区块链上，通过 Subscription NFT 验证
+            
+            if (retries >= maxRetries) {
+              alert('⚠️ 购买成功，但订阅信息同步需要时间，请稍后刷新页面重试');
+              return;
+            }
+            
+            alert('🎉 购买成功！现在可以查看完整简历了');
+            
+            // 6. 自动打开查看
+            console.log('🔓 准备解密简历...');
+            await handleViewResume({ ...resume, isLocked: false });
+          },
+          onError: (error) => {
+            console.error('❌ 支付失败:', error);
+            alert(`支付失败: ${error.message}\n\n可能原因：\n1. 钱包余额不足\n2. 用户取消交易\n3. 网络错误`);
+          },
+        }
+      );
+
+    } catch (err) {
+      console.error('购买订阅失败:', err);
+      alert(`购买失败: ${err.message}`);
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
@@ -180,35 +333,68 @@ export default function ResumeBrowse() {
 
     setIsDecrypting(true);
     try {
-      const encryptionType = resume.encryption_type || 'simple';
+      const encryptionType = resume.rawData?.encryption_type || 'simple';
       
       if (encryptionType === 'seal') {
-        // Seal 解密：验证 Allowlist 权限
-        if (!resume.blob_id || !resume.encryption_id || !resume.policy_object_id) {
+        // Seal 解密：使用订阅验证
+        const blobId = resume.rawData?.blob_id;
+        const encryptionId = resume.rawData?.encryption_id;
+        const policyObjectId = resume.rawData?.policy_object_id;
+        
+        if (!blobId || !encryptionId || !policyObjectId) {
           throw new Error('Seal 加密简历信息不完整');
         }
 
-        console.log('使用 Seal 解密:', {
-          blobId: resume.blob_id,
-          encryptionId: resume.encryption_id,
-          policyObjectId: resume.policy_object_id
+        console.log('🔒 使用 Seal 订阅模式解密:', {
+          blobId,
+          encryptionId,
+          policyObjectId
         });
 
-        // 创建 SessionKey
+        // 1. 查找对应的订阅
+        console.log('🔍 查找订阅 - 用户订阅列表:', userSubscriptions);
+        console.log('🔍 查找订阅 - 目标 policyObjectId:', policyObjectId);
+        console.log('🔍 查找订阅 - 订阅详情:', userSubscriptions.map(sub => ({
+          id: sub.id,
+          service_id: sub.service_id,
+          matches: sub.service_id === policyObjectId
+        })));
+        
+        const subscription = userSubscriptions.find(
+          sub => sub.service_id === policyObjectId
+        );
+        
+        if (!subscription) {
+          throw new Error(`未找到有效订阅，请先购买访问权限。
+已有订阅: ${userSubscriptions.map(s => s.service_id).join(', ')}
+需要订阅: ${policyObjectId}`);
+        }
+        
+        console.log('✅ 找到订阅:', subscription);
+
+        // 2. 验证订阅是否有效
+        const serviceDetails = await getServiceDetails(suiClient, policyObjectId);
+        const currentTime = Date.now();
+        
+        if (!isSubscriptionValid(subscription, serviceDetails, currentTime)) {
+          throw new Error('订阅已过期，请重新购买');
+        }
+        
+        console.log('✅ 订阅有效');
+
+        // 3. 创建 SessionKey
         const { SessionKey } = await import('@mysten/seal');
         const { getSuiClient } = await import('../utils/sealClient');
         const { SEAL_CONFIG } = await import('../config/seal.config');
         
-        const suiClient = getSuiClient();
-        
         const sessionKey = await SessionKey.create({
           address: currentAccount.address,
           packageId: SEAL_CONFIG.packageId,
-          ttlMin: 10, // 10 分钟有效期 (Seal 限制 1-30)
+          ttlMin: 10,
           suiClient,
         });
         
-        // 签名 SessionKey
+        // 4. 签名 SessionKey
         console.log('✍️ 请在钱包中签名 SessionKey...');
         const personalMessage = sessionKey.getPersonalMessage();
         
@@ -219,14 +405,56 @@ export default function ResumeBrowse() {
         await sessionKey.setPersonalMessageSignature(result.signature);
         console.log('✅ SessionKey 创建并签名成功');
 
-        // 下载并解密
-        const decrypted = await downloadAndDecryptResume(
-          resume.blob_id,
+        // 5. 构建订阅验证的 MoveCall
+        const moveCallConstructor = constructSubscriptionApprove({
+          blobId: encryptionId,
+          subscriptionId: subscription.id,
+          serviceId: policyObjectId,
+        });
+
+        // 6. 下载并解密
+        console.log('📥 下载并解密简历...');
+        const decryptedData = await downloadAndDecryptResume(
+          blobId,
           sessionKey,
-          resume.policy_object_id
+          policyObjectId,
+          moveCallConstructor
         );
         
-        setDecryptedData(decrypted);
+        console.log('✅ 解密成功，解析简历数据...');
+        
+        // 7. downloadAndDecryptResume 已经返回了解析后的 JSON 对象
+        // 不需要再次解码和解析
+        const resumeData = decryptedData;
+        console.log('📄 解析后的简历数据:', resumeData);
+        
+        // 8. 更新简历列表中的数据（填充详细信息）
+        const currentResumeId = resume.resumeId || resume.id;
+        setResumes(resumes.map(r => {
+          if (r.resumeId === currentResumeId) {
+            const personal = resumeData.personal || {};
+            const desiredPosition = resumeData.desired_position || {};
+            
+            return {
+              ...r,
+              name: personal.name || r.name,
+              title: desiredPosition.position || r.title,
+              experience: calculateExperience(personal.work_start_date),
+              education: getEducationLevel(resumeData.education),
+              jobStatus: personal.job_status || r.jobStatus,
+              location: desiredPosition.city || r.location,
+              salary: formatSalary(desiredPosition.salary_min, desiredPosition.salary_max),
+              skills: (resumeData.skills || '').split(',').map(s => s.trim()).filter(Boolean),
+              highlights: resumeData.skills || r.highlights,
+              avatar: getAvatar(personal.gender),
+              isLocked: false,
+              decryptedData: resumeData, // 保存完整的解密数据
+            };
+          }
+          return r;
+        }));
+        
+        setDecryptedData(resumeData);
 
       } else {
         // 简单加密：使用密钥
@@ -234,14 +462,15 @@ export default function ResumeBrowse() {
           throw new Error('请输入解密密钥');
         }
 
-        if (!resume.blob_id) {
+        const blobId = resume.rawData?.blob_id;
+        if (!blobId) {
           throw new Error('简历数据不完整');
         }
 
-        console.log('使用简单加密解密:', resume.blob_id);
+        console.log('使用简单加密解密:', blobId);
 
         // 从 Walrus 下载
-        const encryptedBlob = await downloadFromWalrus(resume.blob_id);
+        const encryptedBlob = await downloadFromWalrus(blobId);
         
         // 解密
         const decrypted = await decryptWithSeal(encryptedBlob, decryptKey);
@@ -456,21 +685,49 @@ export default function ResumeBrowse() {
                 </div>
 
                 {/* Unlock Button */}
-                {resume.isLocked ? (
-                  <button
-                    onClick={() => handleUnlock(resume.id)}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-colors flex items-center justify-center gap-2 font-semibold"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                    </svg>
-                    支付 {resume.price} 解锁
-                  </button>
-                ) : (
-                  <div className="text-center p-3 bg-green-50 text-green-700 rounded-lg font-medium">
-                    ✓ 已解锁
-                  </div>
-                )}
+                {(() => {
+                  // 检查是否已购买订阅
+                  const hasSubscription = userSubscriptions.some(
+                    sub => sub.service_id === resume.rawData?.policy_object_id
+                  );
+                  
+                  if (hasSubscription || !resume.isLocked) {
+                    return (
+                      <button
+                        onClick={() => handleViewResume({ ...resume, isLocked: false })}
+                        className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        查看完整简历
+                      </button>
+                    );
+                  }
+                  
+                  return (
+                    <button
+                      onClick={() => handleUnlock(resume.id)}
+                      disabled={isPurchasing}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-colors flex items-center justify-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isPurchasing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          购买中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                          </svg>
+                          支付 {resume.price} 购买永久访问
+                        </>
+                      )}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           ))}
@@ -487,29 +744,35 @@ export default function ResumeBrowse() {
 
         {/* How it works */}
         <div className="mt-12 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-8 border-2 border-orange-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">💡 如何使用</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">💡 如何使用订阅模式查看简历</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <div className="text-3xl mb-2">1️⃣</div>
-              <h4 className="font-bold text-gray-900 mb-2">浏览匿名简历</h4>
+              <h4 className="font-bold text-gray-900 mb-2">浏览加密简历</h4>
               <p className="text-gray-700 text-sm">
-                查看候选人的技能摘要、经验和期望，但详细信息被加密保护
+                查看候选人的技能摘要、经验和期望，详细信息使用 Seal 加密保护
               </p>
             </div>
             <div>
               <div className="text-3xl mb-2">2️⃣</div>
-              <h4 className="font-bold text-gray-900 mb-2">x402 支付解锁</h4>
+              <h4 className="font-bold text-gray-900 mb-2">购买订阅（永久访问）</h4>
               <p className="text-gray-700 text-sm">
-                找到合适的候选人？通过 x402 支付小额费用直接解锁完整简历
+                支付小额 USDC，购买后获得永久访问权限，款项直接转给简历所有者
               </p>
             </div>
             <div>
               <div className="text-3xl mb-2">3️⃣</div>
-              <h4 className="font-bold text-gray-900 mb-2">查看完整信息</h4>
+              <h4 className="font-bold text-gray-900 mb-2">解密查看完整简历</h4>
               <p className="text-gray-700 text-sm">
-                支付后立即获得完整联系方式和详细简历，直接联系候选人
+                订阅成功后，系统自动验证权限并解密，随时查看完整联系方式和详细信息
               </p>
             </div>
+          </div>
+          <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+            <p className="text-blue-900 text-sm font-medium">
+              ✨ <strong>特色功能：</strong>
+              基于 Seal 订阅模式，一次付费永久访问 • 链上验证权限 • 端到端加密 • 去中心化存储
+            </p>
           </div>
         </div>
 
@@ -645,27 +908,27 @@ export default function ResumeBrowse() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="text-gray-600">姓名：</span>
-                          <span className="font-medium text-gray-900">{decryptedData.name || '未提供'}</span>
+                          <span className="font-medium text-gray-900">{decryptedData.personal?.name || '未提供'}</span>
                         </div>
                         <div>
                           <span className="text-gray-600">性别：</span>
-                          <span className="font-medium text-gray-900">{decryptedData.gender || '未提供'}</span>
+                          <span className="font-medium text-gray-900">{decryptedData.personal?.gender || '未提供'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">年龄：</span>
-                          <span className="font-medium text-gray-900">{decryptedData.age || '未提供'}</span>
+                          <span className="text-gray-600">出生日期：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.personal?.birth_date || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">工作开始日期：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.personal?.work_start_date || '未提供'}</span>
                         </div>
                         <div>
                           <span className="text-gray-600">联系方式：</span>
-                          <span className="font-medium text-gray-900">{decryptedData.contact || decryptedData.phone || '未提供'}</span>
+                          <span className="font-medium text-gray-900">{decryptedData.personal?.contact || decryptedData.personal?.phone || '未提供'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">邮箱：</span>
-                          <span className="font-medium text-gray-900">{decryptedData.email || '未提供'}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">所在地：</span>
-                          <span className="font-medium text-gray-900">{decryptedData.location || '未提供'}</span>
+                          <span className="text-gray-600">求职状态：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.personal?.job_status || '未提供'}</span>
                         </div>
                       </div>
                     </div>
@@ -676,29 +939,39 @@ export default function ResumeBrowse() {
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="text-gray-600">职位：</span>
-                          <span className="font-medium text-gray-900">{decryptedData.title || '未提供'}</span>
+                          <span className="font-medium text-gray-900">{decryptedData.desired_position?.position || '未提供'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">期望薪资：</span>
-                          <span className="font-medium text-gray-900">{decryptedData.expected_salary || decryptedData.salary || '面议'}</span>
+                          <span className="text-gray-600">工作类型：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.desired_position?.job_type || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">期望行业：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.desired_position?.industry || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">期望城市：</span>
+                          <span className="font-medium text-gray-900">{decryptedData.desired_position?.city || '未提供'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">最低薪资：</span>
+                          <span className="font-medium text-gray-900">
+                            {decryptedData.desired_position?.salary_min ? `${(decryptedData.desired_position.salary_min / 1000).toFixed(0)}K` : '未提供'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">最高薪资：</span>
+                          <span className="font-medium text-gray-900">
+                            {decryptedData.desired_position?.salary_max ? `${(decryptedData.desired_position.salary_max / 1000).toFixed(0)}K` : '未提供'}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* 工作经验 */}
-                    {decryptedData.experience && (
-                      <div className="bg-gray-50 rounded-lg p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">💼 工作经验</h3>
-                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
-                          {decryptedData.experience}
-                        </div>
-                      </div>
-                    )}
-
                     {/* 技能 */}
                     {decryptedData.skills && (
                       <div className="bg-gray-50 rounded-lg p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">🛠️ 技能专长</h3>
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">️ 技能专长</h3>
                         <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
                           {decryptedData.skills}
                         </div>
@@ -706,21 +979,79 @@ export default function ResumeBrowse() {
                     )}
 
                     {/* 教育背景 */}
-                    {decryptedData.education && (
+                    {decryptedData.education && Array.isArray(decryptedData.education) && decryptedData.education.length > 0 && (
                       <div className="bg-gray-50 rounded-lg p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-4">🎓 教育背景</h3>
-                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
-                          {decryptedData.education}
+                        <div className="space-y-4">
+                          {decryptedData.education.map((edu, index) => (
+                            <div key={index} className="border-l-4 border-blue-500 pl-4">
+                              <div className="font-semibold text-gray-900">{edu.school || '未知学校'}</div>
+                              <div className="text-gray-700">{edu.major || '未知专业'} · {edu.degree || '未知学历'}</div>
+                              <div className="text-sm text-gray-500">
+                                {edu.start_date || ''} - {edu.end_date || ''}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 工作经验 */}
+                    {decryptedData.work_experience && Array.isArray(decryptedData.work_experience) && decryptedData.work_experience.length > 0 && (
+                      <div className="bg-gray-50 rounded-lg p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">💼 工作经验</h3>
+                        <div className="space-y-4">
+                          {decryptedData.work_experience.map((work, index) => (
+                            <div key={index} className="border-l-4 border-green-500 pl-4">
+                              <div className="font-semibold text-gray-900">{work.company || '未知公司'}</div>
+                              <div className="text-gray-700">{work.position || '未知职位'}</div>
+                              <div className="text-sm text-gray-500">
+                                {work.start_date || ''} - {work.end_date || '至今'}
+                              </div>
+                              {work.description && (
+                                <div className="mt-2 text-gray-600 text-sm whitespace-pre-wrap">{work.description}</div>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
 
                     {/* 项目经验 */}
-                    {decryptedData.projects && (
+                    {decryptedData.project_experience && Array.isArray(decryptedData.project_experience) && decryptedData.project_experience.length > 0 && (
                       <div className="bg-gray-50 rounded-lg p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-4">🚀 项目经验</h3>
-                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
-                          {decryptedData.projects}
+                        <div className="space-y-4">
+                          {decryptedData.project_experience.map((project, index) => (
+                            <div key={index} className="border-l-4 border-purple-500 pl-4">
+                              <div className="font-semibold text-gray-900">{project.name || '未知项目'}</div>
+                              <div className="text-gray-700">{project.role || '项目成员'}</div>
+                              <div className="text-sm text-gray-500">
+                                {project.start_date || ''} - {project.end_date || ''}
+                              </div>
+                              {project.description && (
+                                <div className="mt-2 text-gray-600 text-sm whitespace-pre-wrap">{project.description}</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 证书 */}
+                    {decryptedData.certificates && Array.isArray(decryptedData.certificates) && decryptedData.certificates.length > 0 && (
+                      <div className="bg-gray-50 rounded-lg p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">🏆 证书</h3>
+                        <div className="space-y-2">
+                          {decryptedData.certificates.map((cert, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <span className="text-blue-600">•</span>
+                              <span className="text-gray-700">{cert.name || '未知证书'}</span>
+                              {cert.issue_date && (
+                                <span className="text-sm text-gray-500">({cert.issue_date})</span>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}

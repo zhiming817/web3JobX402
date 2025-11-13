@@ -5,7 +5,7 @@
  */
 
 // Seal 合约配置 (已部署在测试网)
-export const TESTNET_PACKAGE_ID = '0x55202f19ccbb6d2d518cf11bc1e6751d0762275427665bdd76d1e917aad82b17';
+export const TESTNET_PACKAGE_ID = '0x62b4422e6a76cda57489f31a90e5e73878f9e9af7f97471f4e257d8006df58af';
 
 // Seal 密钥服务器配置
 export const SEAL_SERVER_CONFIGS = [

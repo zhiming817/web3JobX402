@@ -81,7 +81,7 @@ const ResumeBrowse = () => {
           location: desired_position?.city || '未知',
           salary: formatSalary(desired_position?.salary_min, desired_position?.salary_max),
           avatar: getAvatar(personal?.gender),
-          price: `${(resume.price / 1_000_000_000).toFixed(4)} SOL`,
+          price: `${(resume.price / 1_000_000).toFixed(2)} USDC`,
           isLocked: true
         };
       });
