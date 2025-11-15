@@ -81,6 +81,7 @@ export const loadResumeSummaries = async () => {
           ...resume,
           // 确保加密字段存在
           encryption_type: resume.encryption_type,
+          encryption_mode: resume.encryption_mode, // 添加 encryption_mode
           encryption_id: resume.encryption_id,
           policy_object_id: resume.policy_object_id,
           blob_id: resume.blob_id,
@@ -405,22 +406,96 @@ export const handleDecryptResume = async ({
     console.log('🔍 可能的 Resume ID 来源:', possibleIds);
     
     const encryptionType = resume.rawData?.encryption_type || 'simple';
+    const encryptionMode = resume.rawData?.encryption_mode; // 获取加密模式
+    
+    console.log('🔐 加密信息:', {
+      encryptionType,
+      encryptionMode,
+      blobId: resume.rawData?.blob_id,
+      encryptionId: resume.rawData?.encryption_id,
+      policyObjectId: resume.rawData?.policy_object_id,
+    });
     
     if (encryptionType === 'seal') {
-      // Seal 解密：使用订阅验证
+      // Seal 解密
       const blobId = resume.rawData?.blob_id;
       const encryptionId = resume.rawData?.encryption_id;
       const policyObjectId = resume.rawData?.policy_object_id;
       
-      if (!blobId || !encryptionId || !policyObjectId) {
+      if (!blobId || !encryptionId) {
         throw new Error('Seal 加密简历信息不完整');
       }
 
+      // Allowlist 模式：直接使用 Allowlist 验证
+      if (encryptionMode === 'allowlist') {
+        console.log('🔓 使用 Allowlist 模式解密（无需订阅）');
+        
+        if (!policyObjectId) {
+          throw new Error('Allowlist ID 缺失');
+        }
+
+        console.log('📋 Allowlist 解密参数:', {
+          blobId,
+          encryptionId,
+          allowlistId: policyObjectId,
+        });
+
+        // 创建 SessionKey
+        console.log('🔑 创建 SessionKey...');
+        const sessionKey = await SessionKey.create({
+          address: currentAccount.address,
+          packageId: SEAL_CONFIG.packageId,
+          ttlMin: 10, // 10 分钟有效期
+          suiClient,
+        });
+        
+        // 签名 SessionKey
+        console.log('✍️ 请在钱包中签名 SessionKey...');
+        const personalMessage = sessionKey.getPersonalMessage();
+        const signResult = await signPersonalMessage({
+          message: personalMessage,
+        });
+        await sessionKey.setPersonalMessageSignature(signResult.signature);
+        console.log('✅ SessionKey 创建成功');
+
+        // 下载并使用 Allowlist 解密
+        console.log('📥 下载加密数据...');
+        const decryptedContent = await downloadAndDecryptResume(
+          blobId,
+          sessionKey,
+          policyObjectId,
+          null // moveCallConstructor 为 null 表示使用 Allowlist 模式
+        );
+
+        console.log('✅ Allowlist 解密成功');
+        const decryptedData = decryptedContent; // downloadAndDecryptResume 已经返回解析后的对象
+        setDecryptedData(decryptedData);
+        
+        // 创建访问日志
+        try {
+          await accessLogService.createAccessLog({
+            resume_id: resume.id || resume.resumeId || resume.rawData?.id || resume.rawData?.resume_id,
+            accessor: currentAccount.address,
+            access_type: 'decrypt',
+            encryption_type: 'seal',
+          });
+        } catch (err) {
+          console.warn('创建访问日志失败:', err);
+        }
+        
+        return;
+      }
+
+      // Subscription 模式：需要订阅验证
       console.log('🔒 使用 Seal 订阅模式解密:', {
         blobId,
         encryptionId,
         policyObjectId
       });
+      
+      if (!policyObjectId) {
+        throw new Error('Service ID (policyObjectId) 缺失');
+      }
 
       // 1. 查找对应的订阅
       console.log('🔍 查找订阅 - 用户订阅列表:', userSubscriptions);

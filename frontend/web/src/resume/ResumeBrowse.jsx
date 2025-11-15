@@ -319,12 +319,16 @@ export default function ResumeBrowse() {
 
                 {/* Unlock Button */}
                 {(() => {
-                  // 检查是否已购买订阅
-                  const hasSubscription = userSubscriptions.some(
-                    sub => sub.service_id === resume.rawData?.policy_object_id
-                  );
+                  const encryptionMode = resume.rawData?.encryption_mode;
                   
-                  if (hasSubscription || !resume.isLocked) {
+                  console.log('🔍 简历按钮渲染:', {
+                    resumeId: resume.id,
+                    encryptionMode: encryptionMode,
+                    rawData: resume.rawData,
+                  });
+                  
+                  // Allowlist 模式 - 直接显示查看按钮
+                  if (encryptionMode === 'allowlist') {
                     return (
                       <button
                         onClick={() => handleViewResume({ ...resume, isLocked: false })}
@@ -339,25 +343,61 @@ export default function ResumeBrowse() {
                     );
                   }
                   
+                  // Subscription 模式 - 检查是否已购买订阅
+                  if (encryptionMode === 'subscription') {
+                    const hasSubscription = userSubscriptions.some(
+                      sub => sub.service_id === resume.rawData?.policy_object_id
+                    );
+                    
+                    if (hasSubscription || !resume.isLocked) {
+                      return (
+                        <button
+                          onClick={() => handleViewResume({ ...resume, isLocked: false })}
+                          className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          查看完整简历
+                        </button>
+                      );
+                    }
+                    
+                    return (
+                      <button
+                        onClick={() => handleUnlock(resume.id)}
+                        disabled={isPurchasing}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-colors flex items-center justify-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isPurchasing ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            购买中...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                            </svg>
+                            支付 {resume.price} 购买永久访问
+                          </>
+                        )}
+                      </button>
+                    );
+                  }
+                  
+                  // 默认情况（简单加密或无加密模式）
                   return (
                     <button
-                      onClick={() => handleUnlock(resume.id)}
-                      disabled={isPurchasing}
-                      className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-colors flex items-center justify-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleViewResume({ ...resume, isLocked: false })}
+                      className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold"
                     >
-                      {isPurchasing ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          购买中...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                          </svg>
-                          支付 {resume.price} 购买永久访问
-                        </>
-                      )}
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      查看简历
                     </button>
                   );
                 })()}
