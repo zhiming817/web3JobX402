@@ -24,6 +24,14 @@ export const API_ENDPOINTS = {
     delete: (resumeId, owner) => `/api/resumes/${resumeId}/${owner}`,
     unlock: '/api/resumes/unlock',
   },
+
+  // 解锁记录相关
+  unlockRecords: {
+    create: '/api/unlock-records',
+    checkUnlock: (resumeId, buyerId) => `/api/unlock-records/check/${resumeId}/${buyerId}`,
+    getUnlockedByBuyer: (buyerWallet) => `/api/unlock-records/buyer/${buyerWallet}`,
+    getByResume: (resumeId) => `/api/unlock-records/resume/${resumeId}`,
+  },
 };
 
 // HTTP 请求配置

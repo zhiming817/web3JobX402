@@ -1,4 +1,5 @@
-import { resumeService } from '../services';
+import { resumeService, userService } from '../services';
+import unlockRecordService from '../services/unlockRecord.service';
 import { downloadAndDecryptResume } from '../utils/sealClient';
 import { decryptWithSeal } from '../utils/seal';
 import { downloadFromWalrus } from '../utils/walrus';
@@ -182,7 +183,49 @@ export const handleUnlock = async ({
           onSuccess: async (result) => {
             console.log('✅ 支付成功:', result);
             
-            // 4. 重新加载订阅列表（带重试，等待区块链索引）
+            // 4. 创建解锁记录（调用后端接口）
+            try {
+              console.log('📝 开始创建解锁记录...');
+              
+              // 获取买家和卖家的用户信息
+              const [buyerUser, sellerUser] = await Promise.all([
+                userService.getUserByWallet(publicKey).catch(err => {
+                  console.warn('获取买家用户信息失败:', err);
+                  return null;
+                }),
+                userService.getUserByWallet(resume.owner).catch(err => {
+                  console.warn('获取卖家用户信息失败:', err);
+                  return null;
+                })
+              ]);
+
+              if (!buyerUser || !sellerUser) {
+                console.warn('⚠️ 无法获取完整用户信息，跳过创建解锁记录');
+              } else {
+                // 提取交易签名（transaction digest）
+                const transactionDigest = result.digest || result.transaction?.digest || '';
+                
+                const unlockData = {
+                  resume_id: parseInt(resumeId),
+                  buyer_id: buyerUser.id,
+                  buyer_wallet: publicKey,
+                  seller_wallet: resume.owner,
+                  amount: parseInt(serviceFee),
+                  transaction_signature: transactionDigest,
+                  block_time: result.timestamp ? parseInt(result.timestamp) : null,
+                };
+
+                console.log('📝 解锁记录数据:', unlockData);
+                
+                await unlockRecordService.createUnlockRecord(unlockData);
+                console.log('✅ 解锁记录创建成功');
+              }
+            } catch (err) {
+              // 解锁记录创建失败不影响购买流程
+              console.error('❌ 创建解锁记录失败:', err);
+            }
+            
+            // 5. 重新加载订阅列表（带重试，等待区块链索引）
             console.log('🔄 购买成功，正在重新加载订阅列表...');
             
             let retries = 0;
@@ -190,7 +233,8 @@ export const handleUnlock = async ({
             let newSubscriptions = [];
             
             while (retries < maxRetries) {
-              newSubscriptions = await loadUserSubscriptionsCallback();
+              const result = await loadUserSubscriptionsCallback();
+              newSubscriptions = result || []; // 确保是数组
               
               // 等待 state 更新
               await new Promise(resolve => setTimeout(resolve, 1000));
@@ -213,7 +257,7 @@ export const handleUnlock = async ({
               }
             }
             
-            // 5. 更新简历状态
+            // 6. 更新简历状态
             setResumes(resumes.map(r => 
               r.resumeId === resumeId ? { ...r, isLocked: false } : r
             ));
@@ -229,7 +273,7 @@ export const handleUnlock = async ({
             
             alert('🎉 购买成功！现在可以查看完整简历了');
             
-            // 6. 自动打开查看
+            // 7. 自动打开查看
             console.log('🔓 准备解密简历...');
             await handleViewResumeCallback({ ...resume, isLocked: false });
             resolve();
