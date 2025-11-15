@@ -4,9 +4,22 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
-import { Transaction } from '@mysten/sui/transactions';
-import { TESTNET_PACKAGE_ID, ALLOWLIST_MODULE_NAME } from '../config/seal.config';
 import { resumeService } from '../services';
+import PublishBlobToAllowlist from './PublishBlobToAllowlist';
+import {
+  fetchUserAllowlists,
+  createAllowlistTransaction,
+  createAddMemberTransaction,
+  createRemoveMemberTransaction,
+  validateSuiAddress,
+  extractCreatedObjectIds,
+  formatAllowlistCreatedMessage,
+  saveAllowlistToLocalStorage,
+  loadAllowlistHistoryFromLocalStorage,
+  copyToClipboard,
+  openSuiExplorer,
+  openSuiExplorerTx,
+} from '../utils/allowlistUtils';
 
 export default function AllowlistManager({ onAllowlistCreated }) {
   const currentAccount = useCurrentAccount();
@@ -17,8 +30,7 @@ export default function AllowlistManager({ onAllowlistCreated }) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [allowlistHistory, setAllowlistHistory] = useState(() => {
     // 从 localStorage 加载历史记录
-    const saved = localStorage.getItem('allowlistHistory');
-    return saved ? JSON.parse(saved) : [];
+    return loadAllowlistHistoryFromLocalStorage();
   });
   const [isLoadingOnChain, setIsLoadingOnChain] = useState(false);
   const [onChainAllowlists, setOnChainAllowlists] = useState([]);
@@ -36,69 +48,8 @@ export default function AllowlistManager({ onAllowlistCreated }) {
 
     setIsLoadingOnChain(true);
     try {
-      console.log('🔍 查询链上 Allowlist Cap 对象...');
-      
-      // 查询用户拥有的所有 Cap 对象
-      const result = await suiClient.getOwnedObjects({
-        owner: currentAccount.address,
-        options: {
-          showContent: true,
-          showType: true,
-        },
-        filter: {
-          StructType: `${TESTNET_PACKAGE_ID}::${ALLOWLIST_MODULE_NAME}::Cap`,
-        },
-      });
-
-      console.log('📡 链上查询结果:', result);
-
-      if (result.data && result.data.length > 0) {
-        // 解析 Cap 对象，获取关联的 Allowlist ID
-        const caps = result.data.map(obj => {
-          const content = obj.data?.content;
-          if (content?.dataType === 'moveObject' && content?.fields) {
-            return {
-              capId: obj.data.objectId,
-              allowlistId: content.fields.allowlist_id,
-            };
-          }
-          return null;
-        }).filter(Boolean);
-
-        console.log('✅ 找到', caps.length, '个 Cap 对象:', caps);
-
-        // 查询每个 Allowlist 的详细信息
-        const allowlistsWithDetails = await Promise.all(
-          caps.map(async (cap) => {
-            try {
-              const allowlistObj = await suiClient.getObject({
-                id: cap.allowlistId,
-                options: { showContent: true },
-              });
-
-              const allowlistContent = allowlistObj.data?.content;
-              if (allowlistContent?.dataType === 'moveObject' && allowlistContent?.fields) {
-                return {
-                  capId: cap.capId,
-                  allowlistId: cap.allowlistId,
-                  name: allowlistContent.fields.name || '未命名',
-                  members: allowlistContent.fields.list || [],
-                };
-              }
-            } catch (err) {
-              console.error('❌ 查询 Allowlist 详情失败:', err);
-            }
-            return null;
-          })
-        );
-
-        const validAllowlists = allowlistsWithDetails.filter(Boolean);
-        console.log('✅ 加载', validAllowlists.length, '个 Allowlist 详情:', validAllowlists);
-        setOnChainAllowlists(validAllowlists);
-      } else {
-        console.log('📭 未找到 Cap 对象');
-        setOnChainAllowlists([]);
-      }
+      const allowlists = await fetchUserAllowlists(suiClient, currentAccount.address);
+      setOnChainAllowlists(allowlists);
     } catch (error) {
       console.error('❌ 查询链上 Allowlist 失败:', error);
       alert('查询链上数据失败: ' + error.message);
@@ -116,14 +67,16 @@ export default function AllowlistManager({ onAllowlistCreated }) {
 
   // 添加成员到白名单
   const handleAddMember = async (allowlist) => {
-    if (!newMemberAddress.trim()) {
+    const address = newMemberAddress.trim();
+    
+    if (!address) {
       alert('请输入地址');
       return;
     }
 
     // 验证地址格式
-    if (!newMemberAddress.startsWith('0x')) {
-      alert('地址格式错误，必须以 0x 开头');
+    if (!validateSuiAddress(address)) {
+      alert('地址格式错误，必须是有效的 Sui 地址（0x 开头的十六进制字符串）');
       return;
     }
 
@@ -132,25 +85,17 @@ export default function AllowlistManager({ onAllowlistCreated }) {
       console.log('➕ 添加成员到白名单...', {
         allowlistId: allowlist.allowlistId,
         capId: allowlist.capId,
-        address: newMemberAddress.trim(),
+        address,
       });
 
-      const tx = new Transaction();
-      tx.moveCall({
-        target: `${TESTNET_PACKAGE_ID}::${ALLOWLIST_MODULE_NAME}::add`,
-        arguments: [
-          tx.object(allowlist.allowlistId),
-          tx.object(allowlist.capId),
-          tx.pure.address(newMemberAddress.trim()),
-        ],
-      });
+      const tx = createAddMemberTransaction(allowlist.allowlistId, allowlist.capId, address);
 
       signAndExecute(
         { transaction: tx },
         {
           onSuccess: (result) => {
             console.log('✅ 成员添加成功!', result);
-            alert(`✅ 成功添加到白名单！\n\n地址: ${newMemberAddress}`);
+            alert(`✅ 成功添加到白名单！\n\n地址: ${address}`);
             setNewMemberAddress('');
             setManagingAllowlist(null);
             // 重新加载链上数据
@@ -184,15 +129,7 @@ export default function AllowlistManager({ onAllowlistCreated }) {
         address: memberAddress,
       });
 
-      const tx = new Transaction();
-      tx.moveCall({
-        target: `${TESTNET_PACKAGE_ID}::${ALLOWLIST_MODULE_NAME}::remove`,
-        arguments: [
-          tx.object(allowlist.allowlistId),
-          tx.object(allowlist.capId),
-          tx.pure.address(memberAddress),
-        ],
-      });
+      const tx = createRemoveMemberTransaction(allowlist.allowlistId, allowlist.capId, memberAddress);
 
       signAndExecute(
         { transaction: tx },
@@ -229,11 +166,7 @@ export default function AllowlistManager({ onAllowlistCreated }) {
     try {
       console.log('🆕 创建 Allowlist...');
       
-      const tx = new Transaction();
-      tx.moveCall({
-        target: `${TESTNET_PACKAGE_ID}::${ALLOWLIST_MODULE_NAME}::create_allowlist_entry`,
-        arguments: [tx.pure.string(allowlistName)],
-      });
+      const tx = createAllowlistTransaction(allowlistName);
 
       signAndExecute(
         { transaction: tx },
@@ -242,67 +175,29 @@ export default function AllowlistManager({ onAllowlistCreated }) {
             console.log('✅ Allowlist 创建成功!', result);
             
             // 解析创建的对象获取 allowlistId 和 capId
-            const createdObjects = result.effects?.created || [];
-            console.log('Created Objects:', createdObjects);
-            
-            // 找到 Allowlist 和 Cap 对象
-            let allowlistId = '';
-            let capId = '';
-            
-            createdObjects.forEach(obj => {
-              const objectType = obj.owner?.Shared ? 'Allowlist' : 
-                                obj.owner?.AddressOwner ? 'Cap' : '';
-              
-              if (obj.owner?.Shared) {
-                allowlistId = obj.reference?.objectId || '';
-              } else if (obj.owner?.AddressOwner) {
-                capId = obj.reference?.objectId || '';
-              }
-            });
+            const { allowlistId, capId } = extractCreatedObjectIds(result);
             
             // 构建详细的成功消息
-            const message = [
-              '✅ Allowlist 创建成功！',
-              '',
-              '📋 请复制以下 ID 用于创建简历:',
-              '',
-              '🔗 Allowlist ID:',
-              allowlistId || '(请在 Explorer 中查看)',
-              '',
-              '🔑 Cap ID:',
-              capId || '(请在 Explorer 中查看)',
-              '',
-              '📝 这两个 ID 需要在创建简历时填入',
-              '',
-              `交易哈希: ${result.digest}`,
-            ].join('\n');
-            
+            const message = formatAllowlistCreatedMessage(allowlistId, capId, result.digest);
             alert(message);
             
             // 尝试复制 Allowlist ID 到剪贴板
             if (allowlistId) {
-              navigator.clipboard.writeText(allowlistId).then(() => {
-                console.log('✅ Allowlist ID 已复制到剪贴板');
-              }).catch(err => {
-                console.error('复制失败:', err);
-              });
+              copyToClipboard(allowlistId, 'Allowlist ID');
             }
             
             // 打开浏览器
-            window.open(`https://suiscan.xyz/testnet/tx/${result.digest}`, '_blank');
+            openSuiExplorerTx(result.digest);
             
             // 保存到历史记录
             if (allowlistId && capId) {
-              const newRecord = {
-                name: allowlistName,
+              const newRecord = saveAllowlistToLocalStorage(
+                allowlistName,
                 allowlistId,
                 capId,
-                createdAt: new Date().toISOString(),
-                txHash: result.digest,
-              };
-              const updatedHistory = [newRecord, ...allowlistHistory];
-              setAllowlistHistory(updatedHistory);
-              localStorage.setItem('allowlistHistory', JSON.stringify(updatedHistory));
+                result.digest
+              );
+              setAllowlistHistory([newRecord, ...allowlistHistory]);
             }
             
             setAllowlistName('');
@@ -447,7 +342,7 @@ export default function AllowlistManager({ onAllowlistCreated }) {
                       </code>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(allowlist.allowlistId);
+                          copyToClipboard(allowlist.allowlistId, 'Allowlist ID');
                           alert('✅ Allowlist ID 已复制');
                         }}
                         className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs whitespace-nowrap"
@@ -465,7 +360,7 @@ export default function AllowlistManager({ onAllowlistCreated }) {
                       </code>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(allowlist.capId);
+                          copyToClipboard(allowlist.capId, 'Cap ID');
                           alert('✅ Cap ID 已复制');
                         }}
                         className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs whitespace-nowrap"
@@ -544,15 +439,27 @@ export default function AllowlistManager({ onAllowlistCreated }) {
                   )}
                 </div>
 
+                {/* 关联 Blob 功能 */}
+                <div className="mt-3">
+                  <PublishBlobToAllowlist
+                    allowlistId={allowlist.allowlistId}
+                    capId={allowlist.capId}
+                    onPublished={(data) => {
+                      console.log('✅ Blob 已关联:', data);
+                      // 可以选择刷新列表或显示通知
+                    }}
+                  />
+                </div>
+
                 <div className="flex gap-2 mt-3">
                   <button
-                    onClick={() => window.open(`https://suiscan.xyz/testnet/object/${allowlist.allowlistId}`, '_blank')}
+                    onClick={() => openSuiExplorer(allowlist.allowlistId)}
                     className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs"
                   >
                     查看 Allowlist
                   </button>
                   <button
-                    onClick={() => window.open(`https://suiscan.xyz/testnet/object/${allowlist.capId}`, '_blank')}
+                    onClick={() => openSuiExplorer(allowlist.capId)}
                     className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
                   >
                     查看 Cap
@@ -589,7 +496,7 @@ export default function AllowlistManager({ onAllowlistCreated }) {
                       </code>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(record.allowlistId);
+                          copyToClipboard(record.allowlistId, 'Allowlist ID');
                           alert('✅ Allowlist ID 已复制到剪贴板');
                         }}
                         className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
@@ -607,7 +514,7 @@ export default function AllowlistManager({ onAllowlistCreated }) {
                       </code>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(record.capId);
+                          copyToClipboard(record.capId, 'Cap ID');
                           alert('✅ Cap ID 已复制到剪贴板');
                         }}
                         className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
@@ -619,13 +526,13 @@ export default function AllowlistManager({ onAllowlistCreated }) {
                   
                   <div className="flex gap-2 mt-3">
                     <button
-                      onClick={() => window.open(`https://suiscan.xyz/testnet/object/${record.allowlistId}`, '_blank')}
+                      onClick={() => openSuiExplorer(record.allowlistId)}
                       className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs"
                     >
                       查看 Allowlist
                     </button>
                     <button
-                      onClick={() => window.open(`https://suiscan.xyz/testnet/tx/${record.txHash}`, '_blank')}
+                      onClick={() => openSuiExplorerTx(record.txHash)}
                       className="flex-1 px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-xs"
                     >
                       查看交易

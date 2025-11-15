@@ -72,7 +72,7 @@ export function constructSubscriptionApprove(params) {
 ### 函数签名变更
 ```diff
 // Subscription::seal_approve
-- entry fun seal_approve(id: vector<u8>, sub: &Subscription, service: &Service, c: &Clock)
+- entry fun (id: vector<u8>, sub: &Subscription, service: &Service, c: &Clock)
 + entry fun seal_approve(id: vector<u8>, sub: &Subscription, service: &Service)
 ```
 
