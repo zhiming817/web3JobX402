@@ -1,8 +1,10 @@
 use regex::Regex;
 
 /// 验证工具
+#[allow(dead_code)]
 pub struct Validator;
 
+#[allow(dead_code)]
 impl Validator {
     /// 验证邮箱格式
     pub fn is_valid_email(email: &str) -> bool {

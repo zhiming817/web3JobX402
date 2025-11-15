@@ -4,6 +4,7 @@ use sea_orm::{DatabaseConnection, DbErr};
 
 pub struct UserService;
 
+#[allow(dead_code)]
 impl UserService {
     /// 创建或获取用户,返回用户ID
     /// 如果钱包地址已存在则返回现有用户ID,否则创建新用户

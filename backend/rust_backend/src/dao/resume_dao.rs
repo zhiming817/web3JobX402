@@ -6,6 +6,7 @@ use anyhow::Result;
 
 pub struct ResumeDao;
 
+#[allow(dead_code)]
 impl ResumeDao {
     /// 创建简历
     pub async fn create(
@@ -111,6 +112,7 @@ impl ResumeDao {
     }
     
     /// 增加解锁次数
+    #[allow(dead_code)]
     pub async fn increment_unlock_count(
         db: &DatabaseConnection,
         resume_id: &str
@@ -170,6 +172,7 @@ impl ResumeDao {
     }
     
     /// 搜索简历
+    #[allow(dead_code)]
     pub async fn search(
         db: &DatabaseConnection,
         keyword: Option<&str>,

@@ -3,6 +3,7 @@ use crate::controllers::{weather_handler, premium_content_handler, ResumeControl
 use crate::controllers::user_controller;
 
 /// 配置示例路由
+#[allow(dead_code)]
 pub fn config_example_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
@@ -34,6 +35,7 @@ pub fn config_resume_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// 配置解锁简历路由 - 已废弃
+#[allow(dead_code)]
 pub fn config_unlock_routes(_cfg: &mut web::ServiceConfig) {
     // 此函数已废弃，unlock 路由已从项目中移除
     // 保留此函数是为了不破坏 main.rs 的调用，但它现在是空的

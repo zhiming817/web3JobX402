@@ -4,6 +4,7 @@ use anyhow::Result;
 
 pub struct UserDao;
 
+#[allow(dead_code)]
 impl UserDao {
     /// 创建或获取用户，返回用户ID
     /// 如果钱包地址已存在则返回现有用户ID，否则创建新用户
@@ -105,8 +106,8 @@ impl UserDao {
     
     /// 获取用户统计
     pub async fn get_user_stats(
-        db: &DatabaseConnection,
-        user_id: i64
+        _db: &DatabaseConnection,
+        _user_id: i64
     ) -> Result<(i64, i64, i64)> {
         // 这里返回 (简历数, 总浏览数, 总解锁数)
         // 实际实现需要联表查询，这里先返回模拟数据

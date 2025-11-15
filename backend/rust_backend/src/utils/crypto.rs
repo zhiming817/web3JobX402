@@ -7,8 +7,10 @@ use aes_gcm::{
 use rand::RngCore;
 
 /// 加密工具
+#[allow(dead_code)]
 pub struct CryptoUtil;
 
+#[allow(dead_code)]
 impl CryptoUtil {
     /// 生成随机密钥 (32 字节 = 256 位)
     pub fn generate_encryption_key() -> String {
@@ -48,11 +50,11 @@ impl CryptoUtil {
 
         // 生成随机 nonce
         let nonce_bytes = Self::generate_nonce();
-        let nonce = Nonce::from_slice(&nonce_bytes);
+        let nonce = Nonce::from(nonce_bytes);
 
         // 加密
         let ciphertext = cipher
-            .encrypt(nonce, plaintext.as_bytes())
+            .encrypt(&nonce, plaintext.as_bytes())
             .map_err(|e| format!("Encryption failed: {}", e))?;
 
         // 组合: nonce + ciphertext (已包含 tag)
@@ -92,11 +94,13 @@ impl CryptoUtil {
 
         // 分离 nonce 和密文
         let (nonce_bytes, ciphertext) = encrypted.split_at(12);
-        let nonce = Nonce::from_slice(nonce_bytes);
+        let nonce_array: [u8; 12] = nonce_bytes.try_into()
+            .map_err(|_| "Invalid nonce length".to_string())?;
+        let nonce = Nonce::from(nonce_array);
 
         // 解密
         let plaintext_bytes = cipher
-            .decrypt(nonce, ciphertext)
+            .decrypt(&nonce, ciphertext)
             .map_err(|e| format!("Decryption failed: {}", e))?;
 
         // 转换为字符串

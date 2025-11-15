@@ -2,6 +2,7 @@ use actix_web::{HttpResponse, Responder};
 use crate::models::{ApiResponse, WeatherResponse, WeatherReport, PremiumContent};
 
 /// 天气端点（示例）
+#[allow(dead_code)]
 pub async fn weather_handler() -> impl Responder {
     println!("=== Weather endpoint called ===");
     

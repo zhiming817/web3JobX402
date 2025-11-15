@@ -4,4 +4,3 @@ pub mod user_controller;
 
 pub use example_controller::*;
 pub use resume_controller::ResumeController;
-pub use user_controller::*;

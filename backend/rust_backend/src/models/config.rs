@@ -1,7 +1,8 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 /// 环境配置
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct EnvConfig {
     pub host: String,
     pub port: u16,

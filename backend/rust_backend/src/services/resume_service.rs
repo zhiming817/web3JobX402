@@ -1,4 +1,4 @@
-use crate::models::{Resume, ResumeSummary, CreateResumeRequest, ResumeWithPrice, MyResumeSummary, ResumeListItem};
+use crate::models::{Resume, CreateResumeRequest, MyResumeSummary, ResumeListItem};
 use crate::dao::ResumeDao;
 use crate::services::UserService;
 use sea_orm::DatabaseConnection;

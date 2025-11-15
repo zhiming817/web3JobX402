@@ -40,6 +40,7 @@ pub async fn init_db(config: DatabaseConfig) -> Result<DatabaseConnection, DbErr
 }
 
 /// 测试数据库连接
+#[allow(dead_code)]
 pub async fn test_connection(db: &DatabaseConnection) -> Result<(), DbErr> {
     use sea_orm::{Statement, ConnectionTrait};
     db.execute(Statement::from_string(
