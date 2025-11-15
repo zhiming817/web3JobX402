@@ -32,6 +32,14 @@ export const API_ENDPOINTS = {
     getUnlockedByBuyer: (buyerWallet) => `/api/unlock-records/buyer/${buyerWallet}`,
     getByResume: (resumeId) => `/api/unlock-records/resume/${resumeId}`,
   },
+
+  // 访问记录相关
+  accessLogs: {
+    create: '/api/access-logs',
+    getByResume: (resumeId) => `/api/access-logs/resume/${resumeId}`,
+    getByAccessor: (accessor) => `/api/access-logs/accessor/${accessor}`,
+    countAccess: (resumeId) => `/api/access-logs/count/${resumeId}`,
+  },
 };
 
 // HTTP 请求配置

@@ -65,6 +65,12 @@ async fn main() -> std::io::Result<()> {
     println!("  GET  /api/unlock-records/buyer/{{wallet}}      - Get buyer's unlocked resumes");
     println!("  GET  /api/unlock-records/resume/{{id}}         - Get resume's unlock records");
     println!();
+    println!("📊 Access Log Endpoints:");
+    println!("  POST /api/access-logs                        - Create access log");
+    println!("  GET  /api/access-logs/resume/{{id}}            - Get resume's access logs");
+    println!("  GET  /api/access-logs/accessor/{{address}}     - Get accessor's logs");
+    println!("  GET  /api/access-logs/count/{{id}}             - Count resume access");
+    println!();
 
     // 启动服务器
     HttpServer::new(move || {
@@ -80,6 +86,7 @@ async fn main() -> std::io::Result<()> {
             .configure(routes::config_user_routes)
             .configure(routes::config_resume_routes)
             .configure(routes::config_unlock_record_routes)
+            .configure(routes::config_access_log_routes)
     })
     .bind(&bind_addr)?
     .run()

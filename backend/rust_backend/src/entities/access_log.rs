@@ -8,8 +8,9 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i64,
     
-    /// 简历 ID
-    pub resume_id: i64,
+    /// 简历 ID (UUID 字符串)
+    #[sea_orm(column_type = "String(StringLen::N(64))")]
+    pub resume_id: String,
     
     /// 访问者地址
     #[sea_orm(column_type = "String(StringLen::N(100))")]
@@ -47,7 +48,7 @@ pub enum Relation {
     #[sea_orm(
         belongs_to = "super::resume::Entity",
         from = "Column::ResumeId",
-        to = "super::resume::Column::Id"
+        to = "super::resume::Column::ResumeId"
     )]
     Resume,
 }

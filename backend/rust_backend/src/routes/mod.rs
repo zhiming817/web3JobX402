@@ -1,5 +1,5 @@
 use actix_web::web;
-use crate::controllers::{weather_handler, premium_content_handler, ResumeController, UnlockRecordController};
+use crate::controllers::{weather_handler, premium_content_handler, ResumeController, UnlockRecordController, AccessLogController};
 use crate::controllers::user_controller;
 
 /// 配置示例路由
@@ -53,5 +53,20 @@ pub fn config_unlock_record_routes(cfg: &mut web::ServiceConfig) {
             .route("/buyer/{buyer_wallet}", web::get().to(UnlockRecordController::get_unlocked_resumes))
             // 获取简历的解锁记录（所有者查看）
             .route("/resume/{resume_id}", web::get().to(UnlockRecordController::get_resume_unlock_records)),
+    );
+}
+
+/// 配置访问记录路由
+pub fn config_access_log_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/access-logs")
+            // 创建访问记录
+            .route("", web::post().to(AccessLogController::create))
+            // 获取简历的访问记录
+            .route("/resume/{resume_id}", web::get().to(AccessLogController::get_resume_logs))
+            // 获取访问者的访问记录
+            .route("/accessor/{accessor}", web::get().to(AccessLogController::get_accessor_logs))
+            // 统计简历访问次数
+            .route("/count/{resume_id}", web::get().to(AccessLogController::count_resume_access)),
     );
 }

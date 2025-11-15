@@ -1,5 +1,6 @@
 import { resumeService, userService } from '../services';
 import unlockRecordService from '../services/unlockRecord.service';
+import accessLogService from '../services/accessLog.service';
 import { downloadAndDecryptResume } from '../utils/sealClient';
 import { decryptWithSeal } from '../utils/seal';
 import { downloadFromWalrus } from '../utils/walrus';
@@ -392,6 +393,17 @@ export const handleDecryptResume = async ({
 
   setIsDecrypting(true);
   try {
+    console.log('🔍 Resume 对象完整信息:', JSON.stringify(resume, null, 2));
+    
+    // 尝试从多个来源获取 resume ID
+    const possibleIds = {
+      'resume.id': resume.id,
+      'resume.resumeId': resume.resumeId,
+      'resume.rawData?.id': resume.rawData?.id,
+      'resume.rawData?.resume_id': resume.rawData?.resume_id,
+    };
+    console.log('🔍 可能的 Resume ID 来源:', possibleIds);
+    
     const encryptionType = resume.rawData?.encryption_type || 'simple';
     
     if (encryptionType === 'seal') {
@@ -511,6 +523,37 @@ export const handleDecryptResume = async ({
       
       setDecryptedData(resumeData);
 
+      // 9. 创建访问记录（Seal 解密成功）
+      try {
+        console.log('📝 创建访问记录...');
+        // 使用 UUID resume_id 字符串
+        const resumeIdStr = resume.rawData?.resume_id || resume.resumeId;
+        
+        console.log('🔍 获取到的 resume_id (UUID):', resumeIdStr);
+        console.log('🔍 resume.rawData.resume_id:', resume.rawData?.resume_id);
+        console.log('🔍 resume.resumeId:', resume.resumeId);
+        
+        if (!resumeIdStr) {
+          console.warn('⚠️ 无法获取有效的简历 UUID，跳过创建访问记录', {
+            resumeIdStr,
+          });
+        } else {
+          const accessLogData = {
+            resume_id: resumeIdStr, // 直接使用 UUID 字符串
+            accessor_address: currentAccount.address,
+            access_type: 'decrypt',
+            encryption_type: 'seal',
+            success: true,
+          };
+          console.log('📤 发送访问记录数据:', accessLogData);
+          await accessLogService.createAccessLog(accessLogData);
+          console.log('✅ 访问记录创建成功');
+        }
+      } catch (err) {
+        console.error('❌ 创建访问记录失败:', err);
+        // 不影响主流程
+      }
+
     } else {
       // 简单加密：使用密钥
       if (!decryptKey) {
@@ -531,11 +574,63 @@ export const handleDecryptResume = async ({
       const decrypted = await decryptWithSeal(encryptedBlob, decryptKey);
       
       setDecryptedData(decrypted);
+
+      // 创建访问记录（简单加密解密成功）
+      try {
+        console.log('📝 创建访问记录...');
+        // 使用 UUID resume_id 字符串
+        const resumeIdStr = resume.rawData?.resume_id || resume.resumeId;
+        
+        console.log('🔍 获取到的 resume_id (UUID):', resumeIdStr);
+        
+        if (!resumeIdStr) {
+          console.warn('⚠️ 无法获取有效的简历 UUID，跳过创建访问记录');
+        } else {
+          const accessLogData = {
+            resume_id: resumeIdStr, // 直接使用 UUID 字符串
+            accessor_address: currentAccount.address,
+            access_type: 'decrypt',
+            encryption_type: 'simple',
+            success: true,
+          };
+          await accessLogService.createAccessLog(accessLogData);
+          console.log('✅ 访问记录创建成功');
+        }
+      } catch (err) {
+        console.error('❌ 创建访问记录失败:', err);
+        // 不影响主流程
+      }
     }
 
   } catch (err) {
     console.error('解密失败:', err);
     setError(err.message || '解密简历失败');
+    
+    // 创建访问记录（解密失败）
+    try {
+      // 使用 UUID resume_id 字符串
+      const resumeIdStr = resume.rawData?.resume_id || resume.resumeId;
+      
+      console.log('🔍 失败记录 - 获取到的 resume_id (UUID):', resumeIdStr);
+      
+      if (resumeIdStr && currentAccount) {
+        const encryptionType = resume.rawData?.encryption_type || 'simple';
+        const accessLogData = {
+          resume_id: resumeIdStr, // 直接使用 UUID 字符串
+          accessor_address: currentAccount.address,
+          access_type: 'decrypt',
+          encryption_type: encryptionType,
+          success: false,
+          error_message: err.message || '解密失败',
+        };
+        await accessLogService.createAccessLog(accessLogData);
+        console.log('✅ 失败访问记录创建成功');
+      } else {
+        console.warn('⚠️ 无法获取有效的简历 UUID 或用户信息，跳过创建失败访问记录');
+      }
+    } catch (logErr) {
+      console.error('❌ 创建失败访问记录失败:', logErr);
+    }
   } finally {
     setIsDecrypting(false);
   }
