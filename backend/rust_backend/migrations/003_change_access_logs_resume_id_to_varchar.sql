@@ -2,7 +2,8 @@
 -- 以匹配 resumes.resume_id (UUID 字符串)
 
 -- 1. 删除外键约束
-ALTER TABLE access_logs DROP FOREIGN KEY access_logs_ibfk_1;
+ALTER TABLE access_logs DROP FOREIGN KEY access_logs_resume_id_fk
+;
 
 -- 2. 修改 resume_id 列类型
 ALTER TABLE access_logs 
