@@ -1,5 +1,5 @@
 use actix_web::web;
-use crate::controllers::{weather_handler, premium_content_handler, ResumeController};
+use crate::controllers::{weather_handler, premium_content_handler, ResumeController, UnlockRecordController};
 use crate::controllers::user_controller;
 
 /// 配置示例路由
@@ -39,4 +39,19 @@ pub fn config_resume_routes(cfg: &mut web::ServiceConfig) {
 pub fn config_unlock_routes(_cfg: &mut web::ServiceConfig) {
     // 此函数已废弃，unlock 路由已从项目中移除
     // 保留此函数是为了不破坏 main.rs 的调用，但它现在是空的
+}
+
+/// 配置解锁记录路由
+pub fn config_unlock_record_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/unlock-records")
+            // 创建解锁记录（支付成功后调用）
+            .route("", web::post().to(UnlockRecordController::create))
+            // 检查解锁状态
+            .route("/check/{resume_id}/{buyer_id}", web::get().to(UnlockRecordController::check_unlock))
+            // 获取用户已解锁的简历列表
+            .route("/buyer/{buyer_wallet}", web::get().to(UnlockRecordController::get_unlocked_resumes))
+            // 获取简历的解锁记录（所有者查看）
+            .route("/resume/{resume_id}", web::get().to(UnlockRecordController::get_resume_unlock_records)),
+    );
 }

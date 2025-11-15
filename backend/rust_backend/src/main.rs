@@ -59,6 +59,12 @@ async fn main() -> std::io::Result<()> {
     println!("  PUT  /api/resumes/{{resume_id}}        - Update resume");
     println!("  DEL  /api/resumes/{{resume_id}}/{{owner}} - Delete resume");
     println!();
+    println!("🔓 Unlock Record Endpoints:");
+    println!("  POST /api/unlock-records                     - Create unlock record");
+    println!("  GET  /api/unlock-records/check/{{id}}/{{buyer}}  - Check unlock status");
+    println!("  GET  /api/unlock-records/buyer/{{wallet}}      - Get buyer's unlocked resumes");
+    println!("  GET  /api/unlock-records/resume/{{id}}         - Get resume's unlock records");
+    println!();
 
     // 启动服务器
     HttpServer::new(move || {
@@ -73,6 +79,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(db_data.clone())  // SeaORM 数据库连接
             .configure(routes::config_user_routes)
             .configure(routes::config_resume_routes)
+            .configure(routes::config_unlock_record_routes)
     })
     .bind(&bind_addr)?
     .run()
