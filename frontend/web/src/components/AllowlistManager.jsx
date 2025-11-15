@@ -22,6 +22,10 @@ export default function AllowlistManager({ onAllowlistCreated }) {
   });
   const [isLoadingOnChain, setIsLoadingOnChain] = useState(false);
   const [onChainAllowlists, setOnChainAllowlists] = useState([]);
+  const [managingAllowlist, setManagingAllowlist] = useState(null); // 正在管理的 Allowlist
+  const [newMemberAddress, setNewMemberAddress] = useState('');
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [isRemovingMember, setIsRemovingMember] = useState(false);
 
   // 从链上查询用户的 Allowlist Cap 对象
   const loadOnChainAllowlists = async () => {
@@ -109,6 +113,109 @@ export default function AllowlistManager({ onAllowlistCreated }) {
       loadOnChainAllowlists();
     }
   }, [currentAccount?.address]);
+
+  // 添加成员到白名单
+  const handleAddMember = async (allowlist) => {
+    if (!newMemberAddress.trim()) {
+      alert('请输入地址');
+      return;
+    }
+
+    // 验证地址格式
+    if (!newMemberAddress.startsWith('0x')) {
+      alert('地址格式错误，必须以 0x 开头');
+      return;
+    }
+
+    setIsAddingMember(true);
+    try {
+      console.log('➕ 添加成员到白名单...', {
+        allowlistId: allowlist.allowlistId,
+        capId: allowlist.capId,
+        address: newMemberAddress.trim(),
+      });
+
+      const tx = new Transaction();
+      tx.moveCall({
+        target: `${TESTNET_PACKAGE_ID}::${ALLOWLIST_MODULE_NAME}::add`,
+        arguments: [
+          tx.object(allowlist.allowlistId),
+          tx.object(allowlist.capId),
+          tx.pure.address(newMemberAddress.trim()),
+        ],
+      });
+
+      signAndExecute(
+        { transaction: tx },
+        {
+          onSuccess: (result) => {
+            console.log('✅ 成员添加成功!', result);
+            alert(`✅ 成功添加到白名单！\n\n地址: ${newMemberAddress}`);
+            setNewMemberAddress('');
+            setManagingAllowlist(null);
+            // 重新加载链上数据
+            loadOnChainAllowlists();
+          },
+          onError: (error) => {
+            console.error('❌ 添加失败:', error);
+            alert('添加失败: ' + error.message);
+          },
+        }
+      );
+    } catch (error) {
+      console.error('❌ 添加失败:', error);
+      alert('添加失败: ' + error.message);
+    } finally {
+      setIsAddingMember(false);
+    }
+  };
+
+  // 从白名单移除成员
+  const handleRemoveMember = async (allowlist, memberAddress) => {
+    if (!confirm(`确认要移除这个地址吗？\n\n${memberAddress}`)) {
+      return;
+    }
+
+    setIsRemovingMember(true);
+    try {
+      console.log('➖ 从白名单移除成员...', {
+        allowlistId: allowlist.allowlistId,
+        capId: allowlist.capId,
+        address: memberAddress,
+      });
+
+      const tx = new Transaction();
+      tx.moveCall({
+        target: `${TESTNET_PACKAGE_ID}::${ALLOWLIST_MODULE_NAME}::remove`,
+        arguments: [
+          tx.object(allowlist.allowlistId),
+          tx.object(allowlist.capId),
+          tx.pure.address(memberAddress),
+        ],
+      });
+
+      signAndExecute(
+        { transaction: tx },
+        {
+          onSuccess: (result) => {
+            console.log('✅ 成员移除成功!', result);
+            alert(`✅ 成功从白名单移除！\n\n地址: ${memberAddress}`);
+            // 重新加载链上数据
+            loadOnChainAllowlists();
+          },
+          onError: (error) => {
+            console.error('❌ 移除失败:', error);
+            alert('移除失败: ' + error.message);
+          },
+        }
+      );
+    } catch (error) {
+      console.error('❌ 移除失败:', error);
+      alert('移除失败: ' + error.message);
+    } finally {
+      setIsRemovingMember(false);
+    }
+  };
 
   // 创建新的 Allowlist
   const handleCreateAllowlist = async () => {
@@ -379,13 +486,62 @@ export default function AllowlistManager({ onAllowlistCreated }) {
                     ) : (
                       <div className="bg-white px-3 py-2 rounded border border-gray-200 max-h-32 overflow-y-auto">
                         {allowlist.members.map((member, idx) => (
-                          <div key={idx} className="text-xs text-gray-700 py-1 font-mono">
-                            {member}
+                          <div key={idx} className="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">
+                            <code className="text-xs text-gray-700 font-mono flex-1 truncate">
+                              {member}
+                            </code>
+                            <button
+                              onClick={() => handleRemoveMember(allowlist, member)}
+                              disabled={isRemovingMember}
+                              className="ml-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs disabled:opacity-50"
+                              title="移除此地址"
+                            >
+                              移除
+                            </button>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
+
+                  {/* 添加成员表单 */}
+                  {managingAllowlist?.allowlistId === allowlist.allowlistId ? (
+                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                      <h5 className="text-sm font-semibold text-blue-900 mb-2">添加新成员</h5>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newMemberAddress}
+                          onChange={(e) => setNewMemberAddress(e.target.value)}
+                          placeholder="输入 Sui 地址 (0x...)"
+                          className="flex-1 px-3 py-2 border border-blue-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={() => handleAddMember(allowlist)}
+                          disabled={isAddingMember || !newMemberAddress.trim()}
+                          className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {isAddingMember ? '添加中...' : '添加'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setManagingAllowlist(null);
+                            setNewMemberAddress('');
+                          }}
+                          className="px-3 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setManagingAllowlist(allowlist)}
+                      className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                    >
+                      ➕ 添加成员
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex gap-2 mt-3">
