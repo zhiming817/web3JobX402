@@ -39,10 +39,11 @@ impl ResumeService {
             encryption_id: request.encryption_id.clone(),
             policy_object_id: request.policy_object_id.clone(),
             encryption_type: request.encryption_type.clone(),
+            encryption_mode: request.encryption_mode.clone(),
         };
 
-        log::info!("Creating resume with Blob ID: {}, encryption_type: {:?}", 
-                   blob_id, request.encryption_type);
+        log::info!("Creating resume with Blob ID: {}, encryption_type: {:?}, encryption_mode: {:?}", 
+                   blob_id, request.encryption_type, request.encryption_mode);
 
         // 3. 创建简历记录
         // 注意: 简单加密时 encryption_key 由前端管理不存储; Seal 加密时为 None
@@ -83,6 +84,7 @@ impl ResumeService {
                 } else {
                     Some(r.encryption_type.clone())
                 },
+                encryption_mode: r.encryption_mode.clone(),
                 blob_id: if r.blob_id.is_empty() {
                     None
                 } else {
@@ -123,6 +125,7 @@ impl ResumeService {
                     encryption_id: resume.encryption_id,
                     policy_object_id: resume.policy_object_id,
                     encryption_type: resume.encryption_type,
+                    encryption_mode: resume.encryption_mode,
                 })
             })
             .collect();
@@ -157,9 +160,10 @@ impl ResumeService {
         resume_data.encryption_id = resume.encryption_id.clone();
         resume_data.policy_object_id = resume.policy_object_id.clone();
         resume_data.encryption_type = Some(resume.encryption_type.clone());
+        resume_data.encryption_mode = resume.encryption_mode.clone();
 
-        log::info!("Resume detail: id={}, encryption_type={}, policy_object_id={:?}", 
-                   resume_id, resume.encryption_type, resume.policy_object_id);
+        log::info!("Resume detail: id={}, encryption_type={}, encryption_mode={:?}, policy_object_id={:?}", 
+                   resume_id, resume.encryption_type, resume.encryption_mode, resume.policy_object_id);
 
         Ok(resume_data)
     }
@@ -198,6 +202,7 @@ impl ResumeService {
             encryption_id: request.encryption_id.clone(),
             policy_object_id: request.policy_object_id.clone(),
             encryption_type: request.encryption_type.clone(),
+            encryption_mode: request.encryption_mode.clone(),
         };
 
         let summary = serde_json::to_value(&updated)

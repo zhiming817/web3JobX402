@@ -93,6 +93,8 @@ pub struct Resume {
     pub policy_object_id: Option<String>, // Seal Policy Object ID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub encryption_type: Option<String>, // "simple" 或 "seal"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encryption_mode: Option<String>, // "allowlist" 或 "subscription"
 }
 
 /// 包含价格的简历（用于"我的简历"列表）
@@ -127,6 +129,8 @@ pub struct MyResumeSummary {
     pub policy_object_id: Option<String>, // Seal Policy Object ID
     #[serde(skip_serializing_if = "Option::is_none")]
     pub encryption_type: Option<String>, // "simple" 或 "seal"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encryption_mode: Option<String>, // "allowlist" 或 "subscription"
 }
 
 /// 简历摘要（公开信息）
@@ -156,6 +160,8 @@ pub struct ResumeListItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub encryption_type: Option<String>, // "simple" 或 "seal"
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub encryption_mode: Option<String>, // "allowlist" 或 "subscription"
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub blob_id: Option<String>, // Walrus Blob ID
 }
 
@@ -177,6 +183,7 @@ pub struct CreateResumeRequest {
     pub encryption_id: Option<String>,   // Seal 加密 ID
     pub policy_object_id: Option<String>, // Seal Policy Object ID
     pub encryption_type: Option<String>,  // "simple" 或 "seal"
+    pub encryption_mode: Option<String>,  // "allowlist" 或 "subscription"
     pub personal: PersonalInfo,
     pub skills: String,
     pub desired_position: DesiredPosition,

@@ -137,7 +137,7 @@ export default function ResumeCreate() {
         if (encryptionMode === 'allowlist') {
           // ===== Allowlist 模式 =====
           console.log('🔐 使用 Seal + Allowlist 模式创建简历...');
-          result = await resumeService.createResumeWithSeal(apiData, allowlistId);
+          result = await resumeService.createResumeWithSeal(apiData, allowlistId, 'allowlist');
           
           console.log('✅ Seal 加密创建成功:', result);
           
@@ -296,7 +296,7 @@ export default function ResumeCreate() {
           
           // 2. 使用 Service ID 创建加密简历
           console.log('🔐 创建加密简历（关联订阅服务）...');
-          result = await resumeService.createResumeWithSeal(apiData, serviceId);
+          result = await resumeService.createResumeWithSeal(apiData, serviceId, 'subscription');
           console.log('✅ Seal 加密创建成功:', result);
           
           alert(

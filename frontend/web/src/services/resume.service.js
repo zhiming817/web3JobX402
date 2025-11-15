@@ -290,12 +290,13 @@ class ResumeService {
   /**
    * 使用 Seal 加密并上传简历 (带访问控制)
    * @param {object} resumeData - 简历数据
-   * @param {string} policyObjectId - 策略对象 ID (allowlist ID)
+   * @param {string} policyObjectId - 策略对象 ID (allowlist ID 或 service ID)
+   * @param {string} encryptionMode - 加密模式: 'allowlist' 或 'subscription'
    * @returns {Promise<object>} { success, resumeId, blobId, encryptionId }
    */
-  async createResumeWithSeal(resumeData, policyObjectId) {
+  async createResumeWithSeal(resumeData, policyObjectId, encryptionMode = 'allowlist') {
     try {
-      console.log('🔐 Creating resume with Seal encryption...');
+      console.log(`🔐 Creating resume with Seal encryption (${encryptionMode} mode)...`);
       
       // 1. 使用 Seal 加密并上传到 Walrus
       const { blobId, encryptionId, url } = await encryptAndUploadResume(resumeData, policyObjectId);
@@ -309,6 +310,7 @@ class ResumeService {
         encryption_id: encryptionId,
         policy_object_id: policyObjectId,
         encryption_type: 'seal',   // 明确标记为 Seal 加密
+        encryption_mode: encryptionMode, // 加密模式
         encryption_key: null,      // Seal 加密不需要存储密钥
       });
       

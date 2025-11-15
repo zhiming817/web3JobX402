@@ -39,6 +39,10 @@ pub struct Model {
     #[sea_orm(column_type = "String(StringLen::N(20))")]
     pub encryption_type: String,
     
+    /// Seal 加密模式: allowlist(白名单) 或 subscription(订阅付费)
+    #[sea_orm(column_type = "String(StringLen::N(20))", nullable)]
+    pub encryption_mode: Option<String>,
+    
     /// 公开摘要 (JSON 格式)
     #[sea_orm(column_type = "Json")]
     pub summary: serde_json::Value,

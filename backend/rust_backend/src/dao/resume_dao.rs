@@ -22,6 +22,9 @@ impl ResumeDao {
         // 从 resume_data 中获取 encryption_type，默认为 "simple"
         let encryption_type = resume_data.encryption_type.clone().unwrap_or_else(|| "simple".to_string());
         
+        // 从 resume_data 中获取 encryption_mode
+        let encryption_mode = resume_data.encryption_mode.clone();
+        
         // 处理 encryption_key：如果是空字符串则转为 None
         let encryption_key_opt = if encryption_key.is_empty() {
             None
@@ -38,6 +41,7 @@ impl ResumeDao {
             encryption_id: Set(resume_data.encryption_id),
             policy_object_id: Set(resume_data.policy_object_id),
             encryption_type: Set(encryption_type),
+            encryption_mode: Set(encryption_mode),
             summary: Set(summary),
             price: Set(0), // 默认 5 USDC = 5,000,000 (USDC has 6 decimals)
             view_count: Set(0),
