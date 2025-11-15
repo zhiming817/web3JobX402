@@ -1,4 +1,5 @@
 import React from 'react';
+import DatePicker from '../../components/DatePicker';
 
 export default function PersonalInfo({ formData, handleInputChange }) {
   return (
@@ -76,11 +77,11 @@ export default function PersonalInfo({ formData, handleInputChange }) {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             出生年月
           </label>
-          <input
-            type="month"
+          <DatePicker
             value={formData.personal.birthDate}
-            onChange={(e) => handleInputChange('personal', 'birthDate', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            onChange={(value) => handleInputChange('personal', 'birthDate', value)}
+            placeholder="选择出生年月"
+            showMonthYearPicker
           />
         </div>
         <div>
@@ -99,11 +100,11 @@ export default function PersonalInfo({ formData, handleInputChange }) {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             参加工作时间
           </label>
-          <input
-            type="month"
+          <DatePicker
             value={formData.personal.workStartDate}
-            onChange={(e) => handleInputChange('personal', 'workStartDate', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            onChange={(value) => handleInputChange('personal', 'workStartDate', value)}
+            placeholder="选择参加工作时间"
+            showMonthYearPicker
           />
         </div>
         <div>

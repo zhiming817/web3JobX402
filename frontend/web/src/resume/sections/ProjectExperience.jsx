@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DatePicker from '../../components/DatePicker';
 
 export default function ProjectExperience({ formData, setFormData }) {
   const [isAdding, setIsAdding] = useState(false);
@@ -143,20 +144,21 @@ export default function ProjectExperience({ formData, setFormData }) {
                 项目开始时间
               </label>
               <div className="flex items-center gap-2">
-                <input
-                  type="month"
+                <DatePicker
                   value={currentProject.startDate}
-                  onChange={(e) => setCurrentProject({ ...currentProject, startDate: e.target.value })}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  onChange={(value) => setCurrentProject({ ...currentProject, startDate: value })}
+                  placeholder="开始时间"
+                  showMonthYearPicker
+                  className="flex-1"
                 />
                 <span className="text-gray-500">至</span>
-                <input
-                  type="month"
+                <DatePicker
                   value={currentProject.endDate}
-                  onChange={(e) => setCurrentProject({ ...currentProject, endDate: e.target.value })}
+                  onChange={(value) => setCurrentProject({ ...currentProject, endDate: value })}
                   disabled={currentProject.current}
                   placeholder="至今"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100"
+                  showMonthYearPicker
+                  className="flex-1"
                 />
               </div>
             </div>

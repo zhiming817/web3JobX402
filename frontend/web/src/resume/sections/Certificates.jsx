@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DatePicker from '../../components/DatePicker';
 
 export default function Certificates({ formData, setFormData }) {
   const [isAdding, setIsAdding] = useState(false);
@@ -127,24 +128,23 @@ export default function Certificates({ formData, setFormData }) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 颁发时间
               </label>
-              <input
-                type="month"
+              <DatePicker
                 value={currentCert.issueDate}
-                onChange={(e) => setCurrentCert({ ...currentCert, issueDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                onChange={(value) => setCurrentCert({ ...currentCert, issueDate: value })}
+                placeholder="选择颁发时间"
+                showMonthYearPicker
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 有效期至
               </label>
-              <input
-                type="month"
+              <DatePicker
                 value={currentCert.expiryDate}
-                onChange={(e) => setCurrentCert({ ...currentCert, expiryDate: e.target.value })}
+                onChange={(value) => setCurrentCert({ ...currentCert, expiryDate: value })}
                 disabled={currentCert.noExpiry}
                 placeholder="长期有效"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100"
+                showMonthYearPicker
               />
               <div className="mt-2">
                 <label className="flex items-center gap-2 cursor-pointer">

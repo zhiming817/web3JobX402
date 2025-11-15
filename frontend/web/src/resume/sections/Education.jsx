@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DatePicker from '../../components/DatePicker';
 
 export default function Education({ formData, setFormData }) {
   const [isAdding, setIsAdding] = useState(false);
@@ -175,20 +176,20 @@ export default function Education({ formData, setFormData }) {
                 时间段
               </label>
               <div className="flex items-center gap-2">
-                <input
-                  type="month"
+                <DatePicker
                   value={currentEdu.start_date}
-                  onChange={(e) => setCurrentEdu({ ...currentEdu, start_date: e.target.value })}
-                  placeholder="2020-09"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  onChange={(value) => setCurrentEdu({ ...currentEdu, start_date: value })}
+                  placeholder="开始时间"
+                  showMonthYearPicker
+                  className="flex-1"
                 />
                 <span className="text-gray-500">至</span>
-                <input
-                  type="month"
+                <DatePicker
                   value={currentEdu.end_date}
-                  onChange={(e) => setCurrentEdu({ ...currentEdu, end_date: e.target.value })}
-                  placeholder="2024-06"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  onChange={(value) => setCurrentEdu({ ...currentEdu, end_date: value })}
+                  placeholder="结束时间"
+                  showMonthYearPicker
+                  className="flex-1"
                 />
               </div>
             </div>
