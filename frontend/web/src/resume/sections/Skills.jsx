@@ -39,7 +39,7 @@ export default function Skills({ formData, setFormData }) {
             placeholder="请描述你的专业技能、工作经验、个人特长等优势...&#10;&#10;例如：&#10;• 5年+ Web3 开发经验，熟悉 Solana/Ethereum 生态&#10;• 精通 React、TypeScript，有大型前端项目架构经验&#10;• 良好的代码规范和团队协作能力"
             rows={12}
             maxLength={1000}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-black"
           />
           <div className="flex justify-between items-center mt-2">
             <p className="text-sm text-gray-500">

@@ -112,7 +112,7 @@ export default function ProjectExperience({ formData, setFormData }) {
                 value={currentProject.name}
                 onChange={(e) => setCurrentProject({ ...currentProject, name: e.target.value })}
                 placeholder=""
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
@@ -124,7 +124,7 @@ export default function ProjectExperience({ formData, setFormData }) {
                 value={currentProject.role}
                 onChange={(e) => setCurrentProject({ ...currentProject, role: e.target.value })}
                 placeholder="全栈开发"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div className="col-span-2">
@@ -136,7 +136,7 @@ export default function ProjectExperience({ formData, setFormData }) {
                 value={currentProject.link}
                 onChange={(e) => setCurrentProject({ ...currentProject, link: e.target.value })}
                 placeholder="例如：github.com/erik"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div className="col-span-2">
@@ -180,7 +180,7 @@ export default function ProjectExperience({ formData, setFormData }) {
                 onChange={(e) => setCurrentProject({ ...currentProject, description: e.target.value })}
                 placeholder="请填写内容"
                 rows={8}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
               <div className="text-right text-sm text-gray-500 mt-1">
                 {currentProject.description.length}/3000
@@ -195,7 +195,7 @@ export default function ProjectExperience({ formData, setFormData }) {
                 onChange={(e) => setCurrentProject({ ...currentProject, achievements: e.target.value })}
                 placeholder="请填写内容"
                 rows={5}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
               <div className="text-right text-sm text-gray-500 mt-1">
                 {currentProject.achievements.length}/1000

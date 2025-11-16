@@ -15,7 +15,7 @@ export default function PersonalInfo({ formData, handleInputChange }) {
             value={formData.personal.name}
             onChange={(e) => handleInputChange('personal', 'name', e.target.value)}
             placeholder="小明"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-black"
           />
         </div>
         <div>
@@ -25,7 +25,7 @@ export default function PersonalInfo({ formData, handleInputChange }) {
           <select
             value={formData.personal.jobStatus}
             onChange={(e) => handleInputChange('personal', 'jobStatus', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           >
             <option value="employed">离职-随时到岗</option>
             <option value="looking">在职-看看机会</option>
@@ -66,7 +66,7 @@ export default function PersonalInfo({ formData, handleInputChange }) {
           <select
             value={formData.personal.identity}
             onChange={(e) => handleInputChange('personal', 'identity', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           >
             <option value="professional">职场人</option>
             <option value="student">学生</option>
@@ -93,7 +93,7 @@ export default function PersonalInfo({ formData, handleInputChange }) {
             value={formData.personal.phone}
             onChange={(e) => handleInputChange('personal', 'phone', e.target.value)}
             placeholder=""
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           />
         </div>
         <div>
@@ -116,7 +116,7 @@ export default function PersonalInfo({ formData, handleInputChange }) {
             value={formData.personal.wechat}
             onChange={(e) => handleInputChange('personal', 'wechat', e.target.value)}
             placeholder=""
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           />
         </div>
         <div className="col-span-2">
@@ -128,7 +128,7 @@ export default function PersonalInfo({ formData, handleInputChange }) {
             value={formData.personal.email}
             onChange={(e) => handleInputChange('personal', 'email', e.target.value)}
             placeholder=""
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           />
         </div>
       </div>

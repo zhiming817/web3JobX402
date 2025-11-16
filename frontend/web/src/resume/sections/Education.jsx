@@ -128,7 +128,7 @@ export default function Education({ formData, setFormData }) {
                 value={currentEdu.school}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, school: e.target.value })}
                 placeholder=""
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
@@ -138,7 +138,7 @@ export default function Education({ formData, setFormData }) {
               <select
                 value={currentEdu.education_type}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, education_type: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               >
                 <option value="fulltime">全日制</option>
                 <option value="parttime">非全日制</option>
@@ -151,7 +151,7 @@ export default function Education({ formData, setFormData }) {
               <select
                 value={currentEdu.degree}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, degree: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               >
                 <option value="bachelor">本科</option>
                 <option value="master">硕士</option>
@@ -168,7 +168,7 @@ export default function Education({ formData, setFormData }) {
                 value={currentEdu.major}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, major: e.target.value })}
                 placeholder="计算机科学与技术"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div className="col-span-2">
@@ -212,7 +212,7 @@ export default function Education({ formData, setFormData }) {
                 onChange={(e) => setCurrentEdu({ ...currentEdu, experience: e.target.value })}
                 placeholder="1. 在校担任职务...&#10;2. 获得荣誉...&#10;3. 所学主要课程..."
                 rows={5}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
               <div className="text-right text-sm text-gray-500 mt-1">
                 {currentEdu.experience.length}/3000
@@ -227,7 +227,7 @@ export default function Education({ formData, setFormData }) {
                 value={currentEdu.thesis}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, thesis: e.target.value })}
                 placeholder="请输入"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div className="col-span-2">
@@ -239,7 +239,7 @@ export default function Education({ formData, setFormData }) {
                 onChange={(e) => setCurrentEdu({ ...currentEdu, thesisDescription: e.target.value })}
                 placeholder="描述毕业设计/论文的主要内容，向BOSS展示你的学术能力&#10;例如：&#10;1. 选题的目的及意义...&#10;2. 摘要及关键词...&#10;3. 论文结论或成果"
                 rows={5}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
           </div>

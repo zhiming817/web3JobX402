@@ -102,7 +102,7 @@ export default function WorkExperience({ formData, setFormData }) {
                 value={currentWork.company}
                 onChange={(e) => setCurrentWork({ ...currentWork, company: e.target.value })}
                 placeholder="xxx信息科技有限公司"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
@@ -114,7 +114,7 @@ export default function WorkExperience({ formData, setFormData }) {
                 value={currentWork.industry}
                 onChange={(e) => setCurrentWork({ ...currentWork, industry: e.target.value })}
                 placeholder="互联网"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
@@ -126,7 +126,7 @@ export default function WorkExperience({ formData, setFormData }) {
                 value={currentWork.department}
                 onChange={(e) => setCurrentWork({ ...currentWork, department: e.target.value })}
                 placeholder="例如：产品部"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
@@ -138,7 +138,7 @@ export default function WorkExperience({ formData, setFormData }) {
                 value={currentWork.position}
                 onChange={(e) => setCurrentWork({ ...currentWork, position: e.target.value })}
                 placeholder="全栈"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
@@ -182,7 +182,7 @@ export default function WorkExperience({ formData, setFormData }) {
                 onChange={(e) => setCurrentWork({ ...currentWork, description: e.target.value })}
                 placeholder="1. 完成模块的开发；&#10;2. 配合测试人员完成模块的测试工作；&#10;3. 参与技术难题讨论会议，并提出自己的建议；&#10;4.相关开发文档编写。"
                 rows={8}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
               <div className="text-right text-sm text-gray-500 mt-1">
                 {currentWork.description.length}/3000

@@ -41,7 +41,7 @@ export default function DesiredPosition({ formData, handleInputChange }) {
             value={formData.desiredPosition.position}
             onChange={(e) => handleInputChange('desiredPosition', 'position', e.target.value)}
             placeholder="Java"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           />
         </div>
         <div className="col-span-2">
@@ -53,7 +53,7 @@ export default function DesiredPosition({ formData, handleInputChange }) {
             value={formData.desiredPosition.industry}
             onChange={(e) => handleInputChange('desiredPosition', 'industry', e.target.value)}
             placeholder="企业服务、电子商务、医疗健康"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           />
         </div>
         <div>
@@ -66,7 +66,7 @@ export default function DesiredPosition({ formData, handleInputChange }) {
               value={formData.desiredPosition.salaryMin}
               onChange={(e) => handleInputChange('desiredPosition', 'salaryMin', e.target.value)}
               placeholder="13k"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
             />
             <span className="text-gray-500">至</span>
             <input
@@ -74,7 +74,7 @@ export default function DesiredPosition({ formData, handleInputChange }) {
               value={formData.desiredPosition.salaryMax}
               onChange={(e) => handleInputChange('desiredPosition', 'salaryMax', e.target.value)}
               placeholder="17k"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
             />
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function DesiredPosition({ formData, handleInputChange }) {
             value={formData.desiredPosition.city}
             onChange={(e) => handleInputChange('desiredPosition', 'city', e.target.value)}
             placeholder="上海"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           />
         </div>
         <div className="col-span-2">
@@ -97,7 +97,7 @@ export default function DesiredPosition({ formData, handleInputChange }) {
           <input
             type="text"
             placeholder="苏州"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           />
         </div>
       </div>

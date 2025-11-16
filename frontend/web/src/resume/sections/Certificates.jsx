@@ -109,7 +109,7 @@ export default function Certificates({ formData, setFormData }) {
                 value={currentCert.name}
                 onChange={(e) => setCurrentCert({ ...currentCert, name: e.target.value })}
                 placeholder="软件设计师"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
@@ -121,7 +121,7 @@ export default function Certificates({ formData, setFormData }) {
                 value={currentCert.issuer}
                 onChange={(e) => setCurrentCert({ ...currentCert, issuer: e.target.value })}
                 placeholder="中国计算机技术职业资格网"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
@@ -152,7 +152,7 @@ export default function Certificates({ formData, setFormData }) {
                     type="checkbox"
                     checked={currentCert.noExpiry}
                     onChange={(e) => setCurrentCert({ ...currentCert, noExpiry: e.target.checked, expiryDate: '' })}
-                    className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                    className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 text-black"
                   />
                   <span className="text-sm text-gray-700">长期有效</span>
                 </label>
@@ -167,7 +167,7 @@ export default function Certificates({ formData, setFormData }) {
                 value={currentCert.certificateNo}
                 onChange={(e) => setCurrentCert({ ...currentCert, certificateNo: e.target.value })}
                 placeholder="123456789"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div className="col-span-2">
@@ -179,7 +179,7 @@ export default function Certificates({ formData, setFormData }) {
                 onChange={(e) => setCurrentCert({ ...currentCert, description: e.target.value })}
                 placeholder="简要说明证书的含金量、考试难度等"
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
               <div className="text-right text-sm text-gray-500 mt-1">
                 {currentCert.description.length}/500
