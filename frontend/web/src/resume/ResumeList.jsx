@@ -30,18 +30,24 @@ export default function ResumeList() {
       const data = await resumeService.getMyResumes(walletAddress);
       
       // 转换后端数据格式为前端格式
-      const formattedResumes = data.map(resume => ({
-        id: resume.id, // 使用 id 而不是 resume_id
-        name: resume.personal?.name || '未命名简历',
-        updatedAt: new Date(resume.updated_at * 1000).toLocaleDateString('zh-CN'), // 转换时间戳
-        views: resume.view_count || 0,
-        unlocks: resume.unlock_count || 0,
-        price: resume.price || 0, // 价格（USDC 最小单位，6 decimals）
-        priceUSDC: ((resume.price || 0) / 1_000_000).toFixed(2) + ' USDC', // 转换为 USDC 显示
-        earnings: (((resume.price || 0) * (resume.unlock_count || 0)) / 1_000_000).toFixed(2) + ' USDC', // 总收益
-        status: resume.status || 'active',
-        rawData: resume, // 保存原始数据
-      }));
+      const formattedResumes = data.map(resume => {
+        const encryptionMode = resume.encryption_mode || 'subscription';
+        const isSubscription = encryptionMode === 'subscription';
+        
+        return {
+          id: resume.id, // 使用 id 而不是 resume_id
+          name: resume.personal?.name || '未命名简历',
+          updatedAt: new Date(resume.updated_at * 1000).toLocaleDateString('zh-CN'), // 转换时间戳
+          views: resume.view_count || 0,
+          unlocks: resume.unlock_count || 0,
+          encryptionMode, // 加密模式
+          price: resume.price || 0, // 价格（USDC 最小单位，6 decimals）
+          priceUSDC: isSubscription ? ((resume.price || 0) / 1_000_000).toFixed(2) + ' USDC' : null, // 仅订阅模式显示价格
+          earnings: isSubscription ? (((resume.price || 0) * (resume.unlock_count || 0)) / 1_000_000).toFixed(2) + ' USDC' : null, // 仅订阅模式显示收益
+          status: resume.status || 'active',
+          rawData: resume, // 保存原始数据
+        };
+      });
       
       setResumes(formattedResumes);
     } catch (err) {
@@ -207,7 +213,10 @@ export default function ResumeList() {
               <div>
                 <p className="text-sm text-yellow-600 font-medium">总收益</p>
                 <p className="text-2xl font-bold text-yellow-900 mt-1">
-                  {resumes.reduce((acc, r) => acc + parseFloat(r.earnings), 0).toFixed(2)} USDC
+                  {resumes
+                    .filter(r => r.encryptionMode === 'subscription')
+                    .reduce((acc, r) => acc + parseFloat(r.earnings || 0), 0)
+                    .toFixed(2)} USDC
                 </p>
               </div>
               <div className="text-4xl">💰</div>
@@ -245,6 +254,13 @@ export default function ResumeList() {
                       }`}>
                         {resume.status === 'active' ? '已发布' : '草稿'}
                       </span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        resume.encryptionMode === 'allowlist'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {resume.encryptionMode === 'allowlist' ? '📋 Allowlist' : '💰 订阅模式'}
+                      </span>
                     </div>
                     <p className="text-sm text-gray-500 mb-2">简历 ID: {resume.id}</p>
                     <div className="flex items-center gap-6 text-sm text-gray-600">
@@ -267,12 +283,21 @@ export default function ResumeList() {
                         </svg>
                         {resume.unlocks} 次解锁
                       </span>
-                      <span className="flex items-center gap-1 font-semibold text-purple-600">
-                        💎 单价: {resume.priceUSDC}
-                      </span>
-                      <span className="flex items-center gap-1 font-semibold text-green-600">
-                        💰 收益: {resume.earnings}
-                      </span>
+                      {resume.encryptionMode === 'subscription' && (
+                        <>
+                          <span className="flex items-center gap-1 font-semibold text-purple-600">
+                            💎 单价: {resume.priceUSDC}
+                          </span>
+                          <span className="flex items-center gap-1 font-semibold text-green-600">
+                            💰 收益: {resume.earnings}
+                          </span>
+                        </>
+                      )}
+                      {resume.encryptionMode === 'allowlist' && (
+                        <span className="flex items-center gap-1 font-semibold text-blue-600">
+                          🔐 白名单访问
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -286,12 +311,14 @@ export default function ResumeList() {
                         编辑
                       </button>
                     </Link>
-                    <button
-                      onClick={() => handleSetPrice(resume.id)}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                      设置价格
-                    </button>
+                    {resume.encryptionMode === 'subscription' && (
+                      <button
+                        onClick={() => handleSetPrice(resume.id)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        设置价格
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDelete(resume.id)}
                       className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
