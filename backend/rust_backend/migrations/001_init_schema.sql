@@ -6,7 +6,7 @@ USE resume_vault_sui;
 -- 用户表
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    wallet_address VARCHAR(80) UNIQUE NOT NULL COMMENT 'Solana 钱包地址',
+    wallet_address VARCHAR(100) UNIQUE NOT NULL COMMENT 'Solana 钱包地址',
     nickname VARCHAR(100) COMMENT '用户昵称',
     user_type VARCHAR(20) NOT NULL COMMENT '用户类型: job_seeker 或 recruiter',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS resumes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     resume_id VARCHAR(64) UNIQUE NOT NULL COMMENT '简历唯一ID',
     owner_id BIGINT NOT NULL COMMENT '所有者用户ID',
-    owner_wallet VARCHAR(80) NOT NULL COMMENT '所有者钱包地址',
+    owner_wallet VARCHAR(100) NOT NULL COMMENT '所有者钱包地址',
     ipfs_cid VARCHAR(100) NOT NULL COMMENT 'IPFS/walus blob ID',
     encryption_key TEXT NOT NULL COMMENT '加密密钥',
     summary JSON NOT NULL COMMENT '公开摘要',
@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS unlock_records (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     resume_id BIGINT NOT NULL COMMENT '简历ID',
     buyer_id BIGINT NOT NULL COMMENT '购买者用户ID',
-    buyer_wallet VARCHAR(80) NOT NULL COMMENT '购买者钱包地址',
-    seller_wallet VARCHAR(80) NOT NULL COMMENT '卖家钱包地址',
+    buyer_wallet VARCHAR(100) NOT NULL COMMENT '购买者钱包地址',
+    seller_wallet VARCHAR(100) NOT NULL COMMENT '卖家钱包地址',
     amount BIGINT NOT NULL COMMENT '支付金额(lamports)',
     transaction_signature VARCHAR(88) UNIQUE NOT NULL COMMENT ' 交易签名',
     status VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT '状态: pending, confirmed, failed',
