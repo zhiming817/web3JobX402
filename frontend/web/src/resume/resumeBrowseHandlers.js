@@ -56,20 +56,31 @@ export const loadResumeSummaries = async () => {
     // 注意：对于 Seal 加密的简历，详细信息需要解密后才能获取
     const formattedResumes = data.map(resume => {
       const isSealed = resume.encryption_type === 'seal';
+      const encryptionMode = resume.encryption_mode || 'subscription';
+      
+      // 根据加密模式生成不同的提示文本
+      let highlightsText = '暂无介绍';
+      if (isSealed) {
+        if (encryptionMode === 'allowlist') {
+          highlightsText = '🔒 此简历使用 Seal 加密，授权后可查看完整内容';
+        } else {
+          highlightsText = '🔒 此简历使用 Seal 加密，购买订阅后可查看完整内容';
+        }
+      }
       
       return {
         id: resume.id,
         resumeId: resume.id,
         // Seal 加密的简历在列表中显示占位符
         name: isSealed ? '🔐 加密简历' : '未知',
-        title: isSealed ? '需要订阅查看' : '未填写职位',
+        title: isSealed ? '-' : '未填写职位',
         experience: isSealed ? '-' : '未知',
         education: isSealed ? '-' : '未知',
         jobStatus: isSealed ? '-' : '未知',
         location: isSealed ? '-' : '未知',
         salary: isSealed ? '-' : '-',
-        skills: isSealed ? ['订阅后可见'] : [],
-        highlights: isSealed ? '🔒 此简历使用 Seal 加密，购买订阅后可查看完整内容' : '暂无介绍',
+        skills: isSealed ? ['-'] : [],
+        highlights: highlightsText,
         price: ((resume.price || 0) / 1_000_000).toFixed(2) + ' USDC',
         priceRaw: resume.price || 0,
         isLocked: true,

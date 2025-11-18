@@ -30,7 +30,7 @@ export default function PageLayout({ children }) {
       />
       
       {/* Overlay for better content readability */}
-      <div className="fixed inset-0 z-0 bg-black/40" />
+      <div className="fixed inset-0 z-0 bg-gradient-to-br from-blue-600/60 via-purple-600/60 to-pink-600/60" />
       
       {/* Content */}
       <div className="relative z-10">
