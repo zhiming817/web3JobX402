@@ -1,51 +1,101 @@
-## ResumeVault
+# ResumeVault
 
-项目简介 — ResumeVault
+## Project Overview
 
-ResumeVault 是一个基于区块链的去中心化简历授权平台，允许求职者加密保存简历并对外设定访问控制规则；猎头或企业可通过白名单授权或付费订阅获得查看权限，支付直接到账求职者钱包，平台负责访问控制、隐私保护与收益分配。
+ResumeVault is a decentralized resume authorization platform built on blockchain technology. It enables job seekers to encrypt and store their resumes with configurable access control rules. Recruiters and companies can access resumes through whitelist authorization or paid subscriptions, with payments going directly to the job seeker's wallet. The platform handles access control, privacy protection, and revenue distribution.
 
-核心问题
+## Core Problems
 
-传统简历易泄露、被倒卖且求职者无法获得数据收益
-猎头骚扰与滥用隐私信息难以控制
+- Traditional resumes are easily leaked, resold, and job seekers receive no data monetization
+- Recruiter harassment and privacy information abuse are difficult to control
 
-解决方案
+## Solution
 
-- 简历加密存储（Walrus + Seal）
-- 钱包登录与去中心化身份认证
-- **双模式访问控制**：
-  - **Allowlist 模式**：白名单授权访问，适合内推和定向投递
-  - **订阅模式**：付费订阅永久访问，支付直达求职者钱包
-- AI Agent 自动解析、授权与反骚扰策略
+- Encrypted resume storage (Walrus + Seal)
+- Wallet-based login and decentralized identity authentication
+- **Dual-mode access control**:
+  - **Allowlist Mode**: Whitelist-based authorization, ideal for referrals and targeted applications
+  - **Subscription Mode**: Pay-to-access with permanent viewing rights, payments go directly to job seeker's wallet
+- AI Agent for automatic parsing, authorization, and anti-harassment strategies
 
-主要功能
+## Key Features
 
-- 加密上传与版本管理
-- **双访问模式**：
-  - Allowlist：手动管理访问白名单，灵活控制访问权限
-  - 订阅：付费解锁（使用 USDC），支付直达求职者
-- 简历预览摘要（匿名化）与完整解锁
-- AI 自动摘要、技能标签与匹配推荐
-- 访问记录、信誉评分与防骚扰策略
+- Encrypted upload and version management
+- **Dual access modes**:
+  - **Allowlist**: Manual whitelist management with flexible access control
+  - **Subscription**: Pay-to-unlock (using USDC) with payments going directly to job seekers
+- Resume preview summary (anonymized) and full unlock
+- AI-powered auto-summary, skill tagging, and match recommendations
+- Access logs, reputation scoring, and anti-harassment policies
 
-技术栈
+## Tech Stack
 
-- 前端：React + @mysten/dapp-kit
-- 后端：Rust (Actix-web) + SeaORM
-- 区块链：Sui Network
-- 存储：Walrus（去中心化存储）
-- 加密：Seal（阈值加密 + 智能合约访问控制）
-- 智能合约：Move (Allowlist + Subscription)
-- 支付：USDC on Sui
+- **Frontend**: React + @mysten/dapp-kit
+- **Backend**: Rust (Actix-web) + SeaORM
+- **Blockchain**: Sui Network
+- **Storage**: Walrus (decentralized storage)
+- **Encryption**: Seal (threshold encryption + smart contract access control)
+- **Smart Contracts**: Move (Allowlist + Subscription)
+- **Payment**: Micro Sui payments
 
-目标用户与商业模式
+## Target Users & Business Model
 
-- **目标**：求职者、猎头、招聘平台
-- **收益**：
-  - 订阅模式：求职者设定价格，收益直达钱包
-  - Allowlist 模式：免费但可控的定向分享
-  - 未来：平台服务费、企业充值与高级数据服务
+- **Target Users**: Job seekers, recruiters, hiring platforms
+- **Revenue**:
+  - **Subscription Mode**: Job seekers set prices, revenue goes directly to their wallets
+  - **Allowlist Mode**: Free but controlled directional sharing
+  - **Future**: Platform service fees, enterprise recharge, and premium data services
 
-一句话定位
+## One-Sentence Positioning
 
-ResumeVault — 将简历变为受控且有价值的数字资产，求职者掌握隐私与收益，企业通过授权或付费获取真实人才信息。
+ResumeVault — Transform resumes into controlled and valuable digital assets, where job seekers control privacy and revenue, while companies gain access to authentic talent through authorization or payment.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Rust 1.70+
+- Sui Wallet
+- MySQL 8.0+
+
+### Frontend Setup
+
+```bash
+cd frontend/web
+npm install
+npm run dev
+```
+
+### Backend Setup
+
+```bash
+cd backend/rust_backend
+cargo build
+cargo run
+```
+
+### Smart Contract Deployment
+
+```bash
+cd contract/move
+sui move build
+sui client publish --gas-budget 100000000
+```
+
+## Documentation
+
+- [中文文档](./README_CN.md)
+- [Frontend Documentation](./doc/frontend/)
+- [Backend Documentation](./doc/backend/)
+- [Smart Contract Documentation](./doc/contract/)
+
+## License
+
+MIT
+
+## Contact
+
+For questions or feedback, please open an issue on GitHub.
