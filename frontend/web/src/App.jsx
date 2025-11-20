@@ -3,6 +3,8 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getFullnodeUrl } from '@mysten/sui/client';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import Home from './resume/Home.jsx';
 import ResumeCreate from './resume/ResumeCreate.jsx';
 import ResumeEdit from './resume/ResumeEdit.jsx';
@@ -22,14 +24,28 @@ const networkConfig = {
   mainnet: { url: getFullnodeUrl('mainnet') },
 };
 
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+  },
+});
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
         <WalletProvider autoConnect>
-          <HashRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <HashRouter>
+              <Routes>
+                <Route path="/" element={<Home />} />
                 <Route path="/resume/create" element={<ResumeCreate />} />
                 <Route path="/resume/edit/:id" element={<ResumeEdit />} />
                 <Route path="/resume/preview/:id" element={<ResumePreviewPage />} />
@@ -38,8 +54,9 @@ function App() {
                 <Route path="/allowlist" element={<PageLayout><AllowlistManager /></PageLayout>} />
                 <Route path="/encryption-test" element={<ResumeEncryptionExample />} />
                 <Route path="/templates" element={<div className="p-8 text-center"><h2 className="text-2xl">模板功能开发中...</h2></div>} />
-            </Routes>
-          </HashRouter>
+              </Routes>
+            </HashRouter>
+          </ThemeProvider>
         </WalletProvider>
       </SuiClientProvider>
     </QueryClientProvider>

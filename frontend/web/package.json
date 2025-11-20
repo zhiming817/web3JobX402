@@ -11,6 +11,10 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.5",
+    "@mui/material": "^7.3.5",
     "@mysten/dapp-kit": "^0.18.0",
     "@mysten/seal": "^0.9.3",
     "@mysten/sui": "^1.38.0",
