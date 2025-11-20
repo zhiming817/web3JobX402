@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { fetchUserAllowlists } from '../utils/allowlistUtils';
 
 /**
- * 加密模式选择组件
- * 支持两种模式：
- * 1. Allowlist 模式 - 白名单访问控制
- * 2. Subscription 模式 - 付费订阅访问
+ * Encryption Mode Selector Component
+ * Supports two modes:
+ * 1. Allowlist Mode - Access control via allowlist
+ * 2. Subscription Mode - Access via paid subscription
  */
 export default function EncryptionModeSelector({
   useSealEncryption,
@@ -21,16 +23,55 @@ export default function EncryptionModeSelector({
   isSubmitting = false,
 }) {
   const navigate = useNavigate();
+  const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const [userAllowlists, setUserAllowlists] = useState([]);
+  const [isLoadingAllowlists, setIsLoadingAllowlists] = useState(false);
+
+  // Fetch user's allowlists when in Allowlist mode
+  useEffect(() => {
+    if (useSealEncryption && encryptionMode === 'allowlist' && currentAccount?.address) {
+      const loadAllowlists = async () => {
+        setIsLoadingAllowlists(true);
+        try {
+          const lists = await fetchUserAllowlists(suiClient, currentAccount.address);
+          setUserAllowlists(lists);
+          
+          // Auto-select first allowlist if none selected and list is not empty
+          if (lists.length > 0 && !allowlistId) {
+            setAllowlistId(lists[0].allowlistId);
+            setCapId(lists[0].capId);
+          }
+        } catch (error) {
+          console.error('Failed to load allowlists:', error);
+        } finally {
+          setIsLoadingAllowlists(false);
+        }
+      };
+      loadAllowlists();
+    }
+  }, [useSealEncryption, encryptionMode, currentAccount?.address, suiClient]);
+
+  const handleAllowlistChange = (e) => {
+    const selectedId = e.target.value;
+    setAllowlistId(selectedId);
+    
+    // Find corresponding Cap ID
+    const selectedList = userAllowlists.find(list => list.allowlistId === selectedId);
+    if (selectedList) {
+      setCapId(selectedList.capId);
+    }
+  };
 
   return (
     <div className="mt-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-            🔐 Seal 加密和访问控制
+            🔐 Seal Encryption & Access Control
           </h3>
           <p className="text-sm text-blue-700 mt-1">
-            使用 Seal 加密可以实现安全的访问控制和付费解锁
+            Use Seal encryption for secure access control and paid unlocking.
           </p>
         </div>
         <label className="flex items-center cursor-pointer">
@@ -41,19 +82,19 @@ export default function EncryptionModeSelector({
             className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
             disabled={isSubmitting}
           />
-          <span className="ml-2 text-blue-900 font-medium">启用</span>
+          <span className="ml-2 text-blue-900 font-medium">Enable</span>
         </label>
       </div>
 
       {useSealEncryption && (
         <div className="space-y-6 mt-4">
-          {/* 加密模式选择 */}
+          {/* Encryption Mode Selection */}
           <div className="bg-white p-4 rounded-lg border-2 border-blue-300">
             <label className="block text-sm font-semibold text-blue-900 mb-3">
-              🎯 选择访问控制模式 *
+              🎯 Select Access Control Mode *
             </label>
             <div className="grid grid-cols-2 gap-4">
-              {/* Allowlist 模式 */}
+              {/* Allowlist Mode */}
               <button
                 type="button"
                 onClick={() => setEncryptionMode('allowlist')}
@@ -74,19 +115,19 @@ export default function EncryptionModeSelector({
                   />
                   <div className="flex-1">
                     <div className="font-semibold text-gray-900 mb-1">
-                      📋 Allowlist 模式
+                      📋 Allowlist Mode
                     </div>
                     <div className="text-xs text-gray-600 space-y-1">
-                      <div>✅ 手动管理访问名单</div>
-                      <div>✅ 适合特定人员访问</div>
-                      <div>✅ 可随时添加/移除</div>
-                      <div>⚠️ 需要创建 Allowlist</div>
+                      <div>✅ Manually manage access list</div>
+                      <div>✅ Suitable for specific personnel</div>
+                      <div>✅ Add/Remove anytime</div>
+                      <div>⚠️ Requires creating an Allowlist</div>
                     </div>
                   </div>
                 </div>
               </button>
 
-              {/* 订阅模式 */}
+              {/* Subscription Mode */}
               <button
                 type="button"
                 onClick={() => setEncryptionMode('subscription')}
@@ -107,13 +148,13 @@ export default function EncryptionModeSelector({
                   />
                   <div className="flex-1">
                     <div className="font-semibold text-gray-900 mb-1">
-                      💰 订阅模式
+                      💰 Subscription Mode
                     </div>
                     <div className="text-xs text-gray-600 space-y-1">
-                      <div>✅ 付费即可永久访问</div>
-                      <div>✅ 自动化访问控制</div>
-                      <div>✅ 款项直达钱包</div>
-                      <div>🚀 推荐用于公开招聘</div>
+                      <div>✅ Permanent access after payment</div>
+                      <div>✅ Automated access control</div>
+                      <div>✅ Direct payment to wallet</div>
+                      <div>🚀 Recommended for public hiring</div>
                     </div>
                   </div>
                 </div>
@@ -121,53 +162,52 @@ export default function EncryptionModeSelector({
             </div>
           </div>
 
-          {/* Allowlist 模式配置 */}
+          {/* Allowlist Mode Configuration */}
           {encryptionMode === 'allowlist' && (
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-blue-900 mb-2">
-                  Allowlist ID *
+                  Select Allowlist *
                 </label>
-                <input
-                  type="text"
-                  value={allowlistId}
-                  onChange={(e) => setAllowlistId(e.target.value)}
-                  disabled={isSubmitting}
-                  placeholder="0x..."
-                  className="w-full px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
+                {isLoadingAllowlists ? (
+                  <div className="text-sm text-gray-500">Loading allowlists...</div>
+                ) : userAllowlists.length > 0 ? (
+                  <select
+                    value={allowlistId}
+                    onChange={handleAllowlistChange}
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                  >
+                    <option value="">-- Select an Allowlist --</option>
+                    {userAllowlists.map((list) => (
+                      <option key={list.allowlistId} value={list.allowlistId}>
+                        {list.name} ({list.allowlistId.slice(0, 6)}...{list.allowlistId.slice(-4)})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                    No Allowlist found. Please create one first.
+                  </div>
+                )}
                 <p className="text-xs text-blue-600 mt-1">
-                  用于控制谁可以访问您的简历
+                  Controls who can access your resume
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-blue-900 mb-2">
-                  Cap ID *
-                </label>
-                <input
-                  type="text"
-                  value={capId}
-                  onChange={(e) => setCapId(e.target.value)}
-                  disabled={isSubmitting}
-                  placeholder="0x..."
-                  className="w-full px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <p className="text-xs text-blue-600 mt-1">
-                  Allowlist 的管理员凭证
-                </p>
-              </div>
+              {/* Hidden Cap ID field (managed automatically) */}
+              <input type="hidden" value={capId} />
 
               <div className="bg-white p-4 rounded border border-blue-200">
                 <h4 className="text-sm font-semibold text-blue-900 mb-2">
-                  ℹ️ Allowlist 模式说明
+                  ℹ️ Allowlist Mode Info
                 </h4>
                 <ul className="text-xs text-blue-700 space-y-1">
-                  <li>✅ 您可以手动管理访问名单</li>
-                  <li>✅ 支持动态添加/移除访问者</li>
-                  <li>✅ 创建后您会自动添加到白名单</li>
-                  <li>✅ 适合内推、定向投递等场景</li>
-                  <li>⚠️ 需要先创建 Allowlist（一次性操作）</li>
+                  <li>✅ You can manually manage the access list</li>
+                  <li>✅ Supports dynamic adding/removing of visitors</li>
+                  <li>✅ You are automatically added to the allowlist upon creation</li>
+                  <li>✅ Suitable for referrals and targeted submissions</li>
+                  <li>⚠️ Need to create an Allowlist first (one-time operation)</li>
                 </ul>
                 <div className="mt-3">
                   <button
@@ -176,19 +216,19 @@ export default function EncryptionModeSelector({
                     disabled={isSubmitting}
                     className="w-full px-4 py-2 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    🔗 前往创建 Allowlist
+                    🔗 Go to Create Allowlist
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* 订阅模式配置 */}
+          {/* Subscription Mode Configuration */}
           {encryptionMode === 'subscription' && (
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-blue-900 mb-2">
-                  订阅价格 (USDC) *
+                  Subscription Price (USDC) *
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -204,39 +244,39 @@ export default function EncryptionModeSelector({
                   <span className="text-blue-900 font-medium">USDC</span>
                 </div>
                 <p className="text-xs text-blue-600 mt-1">
-                  用户支付此金额后可永久查看您的简历
+                  Users can view your resume permanently after paying this amount
                 </p>
               </div>
 
               <div className="bg-white p-4 rounded border border-blue-200">
                 <h4 className="text-sm font-semibold text-blue-900 mb-2">
-                  ℹ️ 订阅模式说明
+                  ℹ️ Subscription Mode Info
                 </h4>
                 <ul className="text-xs text-blue-700 space-y-1">
-                  <li>✅ 用户支付后获得 Subscription NFT</li>
-                  <li>✅ 永久访问，无需重复付费</li>
-                  <li>✅ 款项自动转入您的钱包</li>
-                  <li>✅ 区块链自动验证访问权限</li>
-                  <li>✅ 适合公开招聘、人才市场等场景</li>
-                  <li>💡 推荐价格：3-10 USDC</li>
+                  <li>✅ Users get a Subscription NFT after payment</li>
+                  <li>✅ Permanent access, no recurring fees</li>
+                  <li>✅ Funds automatically transferred to your wallet</li>
+                  <li>✅ Blockchain automatically verifies access rights</li>
+                  <li>✅ Suitable for public hiring, talent markets, etc.</li>
+                  <li>💡 Recommended price: 3-10 USDC</li>
                 </ul>
               </div>
 
               <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded border border-orange-200">
                 <h4 className="text-sm font-semibold text-orange-900 mb-2 flex items-center gap-2">
-                  💰 收益预估
+                  💰 Revenue Estimation
                 </h4>
                 <div className="text-xs text-orange-700 space-y-1">
                   <div className="flex justify-between">
-                    <span>每次订阅收益:</span>
+                    <span>Revenue per subscription:</span>
                     <span className="font-semibold">{subscriptionPrice || '0'} USDC</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>10 人订阅:</span>
+                    <span>10 subscriptions:</span>
                     <span className="font-semibold">{(parseFloat(subscriptionPrice || 0) * 10).toFixed(2)} USDC</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>100 人订阅:</span>
+                    <span>100 subscriptions:</span>
                     <span className="font-semibold">{(parseFloat(subscriptionPrice || 0) * 100).toFixed(2)} USDC</span>
                   </div>
                 </div>
@@ -244,16 +284,16 @@ export default function EncryptionModeSelector({
             </div>
           )}
 
-          {/* 通用说明 */}
+          {/* General Info */}
           <div className="bg-white p-4 rounded border border-blue-200">
             <h4 className="text-sm font-semibold text-blue-900 mb-2">
-              🔐 什么是 Seal 加密?
+              🔐 What is Seal Encryption?
             </h4>
             <ul className="text-xs text-blue-700 space-y-1">
-              <li>✅ 基于阈值加密，密钥由多个服务器分布式管理</li>
-              <li>✅ 通过区块链智能合约验证访问权限</li>
-              <li>✅ 端到端加密，确保简历内容安全</li>
-              <li>✅ 去中心化架构，无需信任第三方</li>
+              <li>✅ Threshold encryption, keys managed by distributed servers</li>
+              <li>✅ Access rights verified via blockchain smart contracts</li>
+              <li>✅ End-to-end encryption ensures resume content security</li>
+              <li>✅ Decentralized architecture, no trusted third party needed</li>
             </ul>
             <div className="mt-3">
               <button
@@ -262,7 +302,7 @@ export default function EncryptionModeSelector({
                 disabled={isSubmitting}
                 className="w-full px-4 py-2 border border-blue-300 text-blue-700 rounded text-xs font-medium hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                📖 查看 Seal 技术文档
+                📖 View Seal Technical Documentation
               </button>
             </div>
           </div>

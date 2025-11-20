@@ -54,13 +54,13 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
       }
 
       // 保存 PDF
-      const fileName = `${formData.personal.name || '简历'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `${formData.personal.name || 'Resume'}_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
 
-      alert('PDF 导出成功!');
+      alert('PDF exported successfully!');
     } catch (error) {
-      console.error('导出 PDF 失败:', error);
-      alert('导出 PDF 失败,请重试');
+      console.error('Failed to export PDF:', error);
+      alert('Failed to export PDF, please try again');
     } finally {
       setIsExporting(false);
     }
@@ -191,7 +191,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
             {formData.skills && (
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-l-4 border-orange-500 pl-3">
-                  ⭐ 个人优势
+                  ⭐ Personal Summary
                 </h2>
                 <div className="text-gray-700 whitespace-pre-line leading-relaxed">
                   {formData.skills}
@@ -203,7 +203,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
             {formData.workExperience?.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-l-4 border-orange-500 pl-3">
-                  💻 工作经历
+                  💻 Work Experience
                 </h2>
                 <div className="space-y-6">
                   {formData.workExperience.map((work, index) => (
@@ -216,7 +216,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
                           <p className="text-orange-600 font-medium">{work.position}</p>
                         </div>
                         <span className="text-sm text-gray-500 whitespace-nowrap ml-4">
-                          {work.startDate} - {work.endDate || '至今'}
+                          {work.startDate} - {work.endDate || 'Present'}
                         </span>
                       </div>
                       {work.description && (
@@ -234,7 +234,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
             {formData.projectExperience?.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-l-4 border-orange-500 pl-3">
-                  📁 项目经历
+                  📁 Project Experience
                 </h2>
                 <div className="space-y-6">
                   {formData.projectExperience.map((project, index) => (
@@ -247,7 +247,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
                           <p className="text-orange-600 font-medium">{project.role}</p>
                         </div>
                         <span className="text-sm text-gray-500 whitespace-nowrap ml-4">
-                          {project.startDate} - {project.endDate || '至今'}
+                          {project.startDate} - {project.endDate || 'Present'}
                         </span>
                       </div>
                       {project.link && (
@@ -270,7 +270,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
             {formData.education?.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-l-4 border-orange-500 pl-3">
-                  🎓 教育经历
+                  🎓 Education
                 </h2>
                 <div className="space-y-4">
                   {formData.education.map((edu, index) => (
@@ -284,18 +284,18 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
                             {edu.major} · {edu.degree}
                             {edu.educationType && (
                               <span className="text-sm text-gray-500 ml-2">
-                                ({edu.educationType === 'fulltime' ? '全日制' : '非全日制'})
+                                ({edu.educationType === 'fulltime' ? 'Full-time' : 'Part-time'})
                               </span>
                             )}
                           </p>
                         </div>
                         <span className="text-sm text-gray-500 whitespace-nowrap ml-4">
-                          {edu.startDate} - {edu.endDate || '至今'}
+                          {edu.startDate} - {edu.endDate || 'Present'}
                         </span>
                       </div>
                       {edu.thesis && (
                         <p className="text-sm text-gray-600 mt-1">
-                          论文：{edu.thesis}
+                          Thesis: {edu.thesis}
                         </p>
                       )}
                     </div>
@@ -308,23 +308,23 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
             {formData.certificates?.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-l-4 border-orange-500 pl-3">
-                  📜 资格证书
+                  📜 Certificates
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {formData.certificates.map((cert, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                       <h3 className="font-semibold text-gray-900 mb-2">{cert.name}</h3>
                       <p className="text-sm text-gray-600 mb-1">
-                        颁发机构：{cert.issuer}
+                        Issuer: {cert.issuer}
                       </p>
                       {cert.number && (
                         <p className="text-sm text-gray-600 mb-1">
-                          证书编号：{cert.number}
+                          Certificate No: {cert.number}
                         </p>
                       )}
                       <p className="text-sm text-gray-500">
                         {cert.issueDate}
-                        {cert.noExpiry ? ' - 长期有效' : cert.expiryDate ? ` - ${cert.expiryDate}` : ''}
+                        {cert.noExpiry ? ' - No Expiration' : cert.expiryDate ? ` - ${cert.expiryDate}` : ''}
                       </p>
                     </div>
                   ))}
@@ -334,7 +334,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
 
             {/* 页脚 */}
             <div className="mt-8 pt-6 border-t border-gray-200 text-center text-xs text-gray-400">
-              <p>Generated by ResumeVault · Encrypted Resume Platform Based on Solana Blockchain</p>
+              <p>Generated by ResumeVault · Encrypted Resume Platform Based on Sui Blockchain</p>
             </div>
           </div>
         </div>
