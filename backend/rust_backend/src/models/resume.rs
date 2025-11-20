@@ -112,6 +112,7 @@ pub struct ResumeWithPrice {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MyResumeSummary {
     pub id: String,
+    pub name: Option<String>, // 简历名称
     pub owner: String,
     pub created_at: i64,
     pub updated_at: i64,
@@ -151,6 +152,7 @@ pub struct ResumeSummary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResumeListItem {
     pub id: String,
+    pub name: Option<String>, // 简历名称
     pub owner: String,
     pub price: i64, // 价格（USDC 最小单位，6 decimals）
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -171,6 +173,14 @@ pub struct SetPriceRequest {
     pub resume_id: String,
     pub owner: String,
     pub price: u64, // 价格，单位：USDC 最小单位 (1 USDC = 1_000_000 micro-units, 6 decimals)
+}
+
+/// 更新简历名称请求
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpdateResumeNameRequest {
+    pub resume_id: String,
+    pub owner: String,
+    pub name: String,
 }
 
 /// 简历创建请求

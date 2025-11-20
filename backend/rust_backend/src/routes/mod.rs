@@ -29,6 +29,7 @@ pub fn config_resume_routes(cfg: &mut web::ServiceConfig) {
             
             // 管理路由
             .route("/price", web::put().to(ResumeController::set_price))
+            .route("/name", web::put().to(ResumeController::update_name))
             .route("/{resume_id}", web::put().to(ResumeController::update))
             .route("/{resume_id}/{owner}", web::delete().to(ResumeController::delete)),
     );

@@ -172,6 +172,35 @@ class ResumeService {
   }
 
   /**
+   * 更新简历名称
+   * @param {string} resumeId - 简历 ID
+   * @param {string} owner - 所有者钱包地址
+   * @param {string} name - 新的简历名称
+   * @returns {Promise<object>} 更新结果
+   */
+  async updateResumeName(resumeId, owner, name) {
+    try {
+      const response = await httpClient.put('/api/resumes/name', {
+        resume_id: resumeId,
+        owner: owner,
+        name: name,
+      });
+      
+      if (response.success) {
+        return {
+          success: true,
+          message: '简历名称更新成功',
+        };
+      } else {
+        throw new Error(response.error || '更新简历名称失败');
+      }
+    } catch (error) {
+      console.error('更新简历名称失败:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 删除简历
    * @param {string} resumeId - 简历 ID
    * @param {string} owner - 所有者钱包地址

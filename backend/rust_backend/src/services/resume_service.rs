@@ -75,6 +75,7 @@ impl ResumeService {
         let list_items: Vec<ResumeListItem> = resumes.iter()
             .map(|r| ResumeListItem {
                 id: r.resume_id.clone(),
+                name: r.name.clone(), // 映射 name 字段
                 owner: r.owner_wallet.clone(),
                 price: r.price,
                 policy_object_id: r.policy_object_id.clone(),
@@ -113,6 +114,7 @@ impl ResumeService {
                 let resume: Resume = serde_json::from_value(r.summary.clone()).ok()?;
                 Some(MyResumeSummary {
                     id: resume.id,
+                    name: r.name.clone(), // 优先使用数据库中的 name，如果没有则使用 summary 中的
                     owner: resume.owner,
                     created_at: resume.created_at,
                     updated_at: resume.updated_at,
@@ -266,6 +268,31 @@ impl ResumeService {
         ResumeDao::update_price(db, resume_id, price)
             .await
             .map_err(|e| format!("Failed to update resume price: {}", e))?;
+
+        Ok(())
+    }
+
+    /// 更新简历名称
+    pub async fn update_resume_name(
+        db: &DatabaseConnection,
+        resume_id: &str,
+        owner: &str,
+        name: String,
+    ) -> Result<(), String> {
+        let resume = ResumeDao::find_by_resume_id(db, resume_id)
+            .await
+            .map_err(|e| format!("Failed to fetch resume: {}", e))?
+            .ok_or_else(|| "Resume not found".to_string())?;
+
+        // 验证所有权
+        if resume.owner_wallet != owner {
+            return Err("Unauthorized: You don't own this resume".to_string());
+        }
+
+        // 更新名称
+        ResumeDao::update_name(db, resume_id, name)
+            .await
+            .map_err(|e| format!("Failed to update resume name: {}", e))?;
 
         Ok(())
     }

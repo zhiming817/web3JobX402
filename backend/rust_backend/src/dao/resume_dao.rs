@@ -34,6 +34,7 @@ impl ResumeDao {
         
         let resume = resume::ActiveModel {
             resume_id: Set(resume_data.id),
+            name: Set(Some(resume_data.personal.name)), // 保存姓名到数据库字段
             owner_id: Set(user_id),
             owner_wallet: Set(owner),
             blob_id: Set(blob_id),
@@ -222,5 +223,16 @@ impl ResumeDao {
             .sum();
         
         Ok((total_views as i64, total_unlocks as i64, total_earnings))
+    }
+
+    /// 更新简历名称
+    pub async fn update_name(db: &DatabaseConnection, resume_id: &str, name: String) -> Result<()> {
+        Resume::update_many()
+            .col_expr(resume::Column::Name, Expr::value(name))
+            .col_expr(resume::Column::UpdatedAt, Expr::value(chrono::Utc::now().naive_utc()))
+            .filter(resume::Column::ResumeId.eq(resume_id))
+            .exec(db)
+            .await?;
+        Ok(())
     }
 }

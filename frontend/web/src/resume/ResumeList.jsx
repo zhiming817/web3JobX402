@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCurrentAccount } from '@mysten/dapp-kit';
+import { 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
+  Button, 
+  TextField 
+} from '@mui/material';
 import PageLayout from '../layout/PageLayout';
 import { resumeService } from '../services';
 
@@ -11,6 +19,12 @@ export default function ResumeList() {
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Rename Dialog State
+  const [openRenameDialog, setOpenRenameDialog] = useState(false);
+  const [renameResumeId, setRenameResumeId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renaming, setRenaming] = useState(false);
 
   // Load resume list
   useEffect(() => {
@@ -36,7 +50,7 @@ export default function ResumeList() {
         
         return {
           id: resume.id, // Use id instead of resume_id
-          name: resume.personal?.name || 'Untitled Resume',
+          name: resume.name || 'Untitled Resume',
           updatedAt: new Date(resume.updated_at * 1000).toLocaleDateString('en-US'), // Convert timestamp
           views: resume.view_count || 0,
           unlocks: resume.unlock_count || 0,
@@ -100,6 +114,34 @@ export default function ResumeList() {
     } catch (err) {
       console.error('Failed to set resume price:', err);
       alert(`Set price failed: ${err.message}`);
+    }
+  };
+
+  const handleRename = (id, currentName) => {
+    setRenameResumeId(id);
+    // If it's the default name, clear it for easier editing
+    setRenameValue(currentName === 'Untitled Resume' ? '' : currentName);
+    setOpenRenameDialog(true);
+  };
+
+  const handleRenameSubmit = async () => {
+    if (!renameValue.trim()) {
+      alert('Name cannot be empty');
+      return;
+    }
+
+    setRenaming(true);
+    try {
+      const walletAddress = publicKey;
+      await resumeService.updateResumeName(renameResumeId, walletAddress, renameValue);
+      
+      setOpenRenameDialog(false);
+      loadMyResumes();
+    } catch (err) {
+      console.error('Failed to rename resume:', err);
+      alert(`Rename failed: ${err.message}`);
+    } finally {
+      setRenaming(false);
     }
   };
 
@@ -311,6 +353,12 @@ export default function ResumeList() {
                         Edit
                       </button>
                     </Link>
+                    <button
+                      onClick={() => handleRename(resume.id, resume.name)}
+                      className="px-4 py-2 border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                    >
+                      Rename
+                    </button>
                     {resume.encryptionMode === 'subscription' && (
                       <button
                         onClick={() => handleSetPrice(resume.id)}
@@ -332,6 +380,42 @@ export default function ResumeList() {
           </div>
         )}
       </div>
+
+      {/* Rename Dialog */}
+      <Dialog 
+        open={openRenameDialog} 
+        onClose={() => setOpenRenameDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Rename Resume</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Resume Name"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenRenameDialog(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleRenameSubmit} 
+            variant="contained" 
+            color="primary"
+            disabled={renaming}
+          >
+            {renaming ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageLayout>
   );
 }

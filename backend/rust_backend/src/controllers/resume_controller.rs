@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{
-    ApiResponse, CreateResumeRequest, SetPriceRequest,
+    ApiResponse, CreateResumeRequest, SetPriceRequest, UpdateResumeNameRequest,
 };
 use crate::services::ResumeService;
 use sea_orm::DatabaseConnection;
@@ -178,6 +178,36 @@ impl ResumeController {
                 let response = ApiResponse::<()>::success_with_message(
                     (),
                     format!("Resume price set to {} lamports successfully", request.price),
+                );
+                HttpResponse::Ok().json(response)
+            }
+            Err(e) => {
+                let response = ApiResponse::<()>::error(e);
+                HttpResponse::BadRequest().json(response)
+            }
+        }
+    }
+
+    /// 更新简历名称
+    pub async fn update_name(
+        request: web::Json<UpdateResumeNameRequest>,
+        db: web::Data<DatabaseConnection>,
+    ) -> impl Responder {
+        println!("=== Update resume name endpoint ===");
+        println!("Resume ID: {}", request.resume_id);
+        println!("Owner: {}", request.owner);
+        println!("Name: {}", request.name);
+
+        match ResumeService::update_resume_name(
+            &db,
+            &request.resume_id,
+            &request.owner,
+            request.name.clone(),
+        ).await {
+            Ok(_) => {
+                let response = ApiResponse::<()>::success_with_message(
+                    (),
+                    format!("Resume name updated to '{}' successfully", request.name),
                 );
                 HttpResponse::Ok().json(response)
             }

@@ -11,6 +11,10 @@ pub struct Model {
     /// 简历唯一 ID (用于链上交易标识)
     #[sea_orm(unique, column_type = "String(StringLen::N(64))")]
     pub resume_id: String,
+
+    /// 简历名称 (公开显示，不加密)
+    #[sea_orm(column_type = "String(StringLen::N(255))", nullable)]
+    pub name: Option<String>,
     
     /// 所有者用户 ID
     pub owner_id: i64,
