@@ -228,7 +228,7 @@ export default function EncryptionModeSelector({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-blue-900 mb-2">
-                  Subscription Price (USDC) *
+                  Subscription Price (SUI) *
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -236,12 +236,12 @@ export default function EncryptionModeSelector({
                     value={subscriptionPrice}
                     onChange={(e) => setSubscriptionPrice(e.target.value)}
                     disabled={isSubmitting}
-                    placeholder="5"
-                    min="0.01"
-                    step="0.01"
+                    placeholder="0.1"
+                    min="0.000000001"
+                    step="0.000000001"
                     className="flex-1 px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <span className="text-blue-900 font-medium">USDC</span>
+                  <span className="text-blue-900 font-medium">SUI</span>
                 </div>
                 <p className="text-xs text-blue-600 mt-1">
                   Users can view your resume permanently after paying this amount
@@ -258,7 +258,7 @@ export default function EncryptionModeSelector({
                   <li>✅ Funds automatically transferred to your wallet</li>
                   <li>✅ Blockchain automatically verifies access rights</li>
                   <li>✅ Suitable for public hiring, talent markets, etc.</li>
-                  <li>💡 Recommended price: 3-10 USDC</li>
+                  <li>💡 Recommended price: 0.1-1 SUI</li>
                 </ul>
               </div>
 
@@ -269,15 +269,15 @@ export default function EncryptionModeSelector({
                 <div className="text-xs text-orange-700 space-y-1">
                   <div className="flex justify-between">
                     <span>Revenue per subscription:</span>
-                    <span className="font-semibold">{subscriptionPrice || '0'} USDC</span>
+                    <span className="font-semibold">{subscriptionPrice || '0'} SUI</span>
                   </div>
                   <div className="flex justify-between">
                     <span>10 subscriptions:</span>
-                    <span className="font-semibold">{(parseFloat(subscriptionPrice || 0) * 10).toFixed(2)} USDC</span>
+                    <span className="font-semibold">{(parseFloat(subscriptionPrice || 0) * 10).toFixed(9)} SUI</span>
                   </div>
                   <div className="flex justify-between">
                     <span>100 subscriptions:</span>
-                    <span className="font-semibold">{(parseFloat(subscriptionPrice || 0) * 100).toFixed(2)} USDC</span>
+                    <span className="font-semibold">{(parseFloat(subscriptionPrice || 0) * 100).toFixed(9)} SUI</span>
                   </div>
                 </div>
               </div>

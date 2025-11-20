@@ -20,6 +20,12 @@ export default function ResumeList() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Price Dialog State
+  const [openPriceDialog, setOpenPriceDialog] = useState(false);
+  const [priceResumeId, setPriceResumeId] = useState(null);
+  const [priceValue, setPriceValue] = useState('');
+  const [settingPrice, setSettingPrice] = useState(false);
+
   // Rename Dialog State
   const [openRenameDialog, setOpenRenameDialog] = useState(false);
   const [renameResumeId, setRenameResumeId] = useState(null);
@@ -56,8 +62,8 @@ export default function ResumeList() {
           unlocks: resume.unlock_count || 0,
           encryptionMode, // Encryption mode
           price: resume.price || 0, // Price (SUI MIST, 9 decimals)
-          priceSUI: isSubscription ? ((resume.price || 0) / 1_000_000_000).toFixed(2) + ' SUI' : null, // Show price only for subscription mode
-          earnings: isSubscription ? (((resume.price || 0) * (resume.unlock_count || 0)) / 1_000_000_000).toFixed(2) + ' SUI' : null, // Show earnings only for subscription mode
+          priceSUI: isSubscription ? ((resume.price || 0) / 1_000_000_000).toFixed(9) + ' SUI' : null, // Show price only for subscription mode
+          earnings: isSubscription ? (((resume.price || 0) * (resume.unlock_count || 0)) / 1_000_000_000).toFixed(9) + ' SUI' : null, // Show earnings only for subscription mode
           status: resume.status || 'active',
           rawData: resume, // Save raw data
         };
@@ -90,30 +96,35 @@ export default function ResumeList() {
     }
   };
 
-  const handleSetPrice = async (id) => {
+  const handleSetPrice = (id) => {
     // Find current resume and display its current price
     const resume = resumes.find(r => r.id === id);
-    const currentPrice = resume ? ((resume.price || 0) / 1_000_000_000).toFixed(2) : '5.00';
+    const currentPrice = resume ? ((resume.price || 0) / 1_000_000_000).toFixed(9) : '0.000000000';
     
-    const price = prompt('Set resume unlock price (SUI):', currentPrice);
-    if (price === null) return; // User cancelled
-    
-    const priceFloat = parseFloat(price);
+    setPriceResumeId(id);
+    setPriceValue(currentPrice);
+    setOpenPriceDialog(true);
+  };
+
+  const handlePriceSubmit = async () => {
+    const priceFloat = parseFloat(priceValue);
     if (isNaN(priceFloat) || priceFloat < 0) {
       alert('Please enter a valid price');
       return;
     }
 
+    setSettingPrice(true);
     try {
       const walletAddress = publicKey;
-      await resumeService.setResumePrice(id, walletAddress, priceFloat);
+      await resumeService.setResumePrice(priceResumeId, walletAddress, priceFloat);
       
-      alert(`Resume price set to ${priceFloat} SUI`);
-      // Reload list to show updated price
+      setOpenPriceDialog(false);
       loadMyResumes();
     } catch (err) {
       console.error('Failed to set resume price:', err);
       alert(`Set price failed: ${err.message}`);
+    } finally {
+      setSettingPrice(false);
     }
   };
 
@@ -258,7 +269,7 @@ export default function ResumeList() {
                   {resumes
                     .filter(r => r.encryptionMode === 'subscription')
                     .reduce((acc, r) => acc + parseFloat(r.earnings || 0), 0)
-                    .toFixed(2)} SUI
+                    .toFixed(9)} SUI
                 </p>
               </div>
               <div className="text-4xl">💰</div>
@@ -380,6 +391,50 @@ export default function ResumeList() {
           </div>
         )}
       </div>
+
+      {/* Price Dialog */}
+      <Dialog 
+        open={openPriceDialog} 
+        onClose={() => setOpenPriceDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Set Resume Price</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Price (SUI)"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={priceValue}
+            onChange={(e) => setPriceValue(e.target.value)}
+            inputProps={{ 
+              step: "0.000000001",
+              min: "0"
+            }}
+            sx={{ mt: 1 }}
+          />
+          <p className="text-sm text-gray-500 mt-2">
+            Set the price for others to unlock your resume. 
+            (Precision: 9 decimals)
+          </p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenPriceDialog(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handlePriceSubmit} 
+            variant="contained" 
+            color="primary"
+            disabled={settingPrice}
+          >
+            {settingPrice ? 'Saving...' : 'Confirm'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Rename Dialog */}
       <Dialog 

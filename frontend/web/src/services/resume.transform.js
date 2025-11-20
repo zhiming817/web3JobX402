@@ -16,7 +16,7 @@ export function transformResumeData(formData, walletAddress) {
     // 个人信息
     personal: {
       name: formData.personal.name,
-      gender: formData.personal.gender === 'male' ? '男' : '女',
+      gender: formData.personal.gender === 'male' ? 'Male' : 'Female',
       birth_date: formData.personal.birthDate,
       work_start_date: formData.personal.workStartDate,
       job_status: transformJobStatus(formData.personal.jobStatus),
@@ -86,10 +86,10 @@ export function transformResumeData(formData, walletAddress) {
  */
 function transformJobStatus(status) {
   const statusMap = {
-    employed: '在职-考虑机会',
-    离职: '离职-随时到岗',
-    考虑: '在职-暂不考虑',
-    求职: '在职-急找工作',
+    employed: 'Employed - Open to offers',
+    离职: 'Unemployed - Available immediately',
+    考虑: 'Employed - Not looking',
+    求职: 'Employed - Actively looking',
   };
   return statusMap[status] || status;
 }
@@ -99,9 +99,9 @@ function transformJobStatus(status) {
  */
 function transformJobType(type) {
   const typeMap = {
-    fulltime: '全职',
-    parttime: '兼职',
-    intern: '实习',
+    fulltime: 'Full-time',
+    parttime: 'Part-time',
+    intern: 'Internship',
   };
   return typeMap[type] || type;
 }

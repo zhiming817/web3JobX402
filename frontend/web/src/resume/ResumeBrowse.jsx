@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSignPersonalMessage, useSuiClient } from '@mysten/dapp-kit';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box } from '@mui/material';
 import PageLayout from '../layout/PageLayout';
 import { 
   loadUserSubscriptions as loadUserSubscriptionsHandler,
@@ -30,6 +31,10 @@ export default function ResumeBrowse() {
   // Subscription related state
   const [userSubscriptions, setUserSubscriptions] = useState([]);
   const [isPurchasing, setIsPurchasing] = useState(false);
+
+  // Purchase Dialog state
+  const [openPurchaseDialog, setOpenPurchaseDialog] = useState(false);
+  const [resumeToPurchase, setResumeToPurchase] = useState(null);
 
   const [filters, setFilters] = useState({
     keyword: '',
@@ -71,6 +76,24 @@ export default function ResumeBrowse() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePurchaseClick = (resume) => {
+    setResumeToPurchase(resume);
+    setOpenPurchaseDialog(true);
+  };
+
+  const handleClosePurchaseDialog = () => {
+    setOpenPurchaseDialog(false);
+    setResumeToPurchase(null);
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (resumeToPurchase) {
+      const resumeId = resumeToPurchase.id;
+      handleClosePurchaseDialog();
+      await handleUnlock(resumeId);
     }
   };
 
@@ -174,62 +197,7 @@ export default function ResumeBrowse() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Keyword
-              </label>
-              <input
-                type="text"
-                value={filters.keyword}
-                onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
-                placeholder="Search position, skills..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                City
-              </label>
-              <select
-                value={filters.location}
-                onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="">All</option>
-                <option value="上海">Shanghai</option>
-                <option value="北京">Beijing</option>
-                <option value="深圳">Shenzhen</option>
-                <option value="杭州">Hangzhou</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Experience
-              </label>
-              <select
-                value={filters.experience}
-                onChange={(e) => setFilters({ ...filters, experience: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="">All</option>
-                <option value="1-3年">1-3 years</option>
-                <option value="3-5年">3-5 years</option>
-                <option value="5-10年">5-10 years</option>
-                <option value="10年以上">10+ years</option>
-              </select>
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={() => setFilters({ keyword: '', location: '', experience: '', salary: '' })}
-                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Reset Filters
-              </button>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Results Count */}
         <div className="mb-4 text-gray-600">
@@ -246,13 +214,8 @@ export default function ResumeBrowse() {
               {/* Card Header */}
               <div className="bg-gradient-to-r from-orange-500 to-red-600 p-6 text-white">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="text-5xl">{resume.avatar}</div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold">
-                      {resume.isLocked ? `${resume.name.substring(0, 1)}**` : resume.name}
-                    </h3>
-                    <p className="text-orange-100">{resume.title}</p>
-                  </div>
+                  <div className="text-3xl font-bold">{resume.name}</div>
+                 
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <span className="flex items-center gap-1">
@@ -366,7 +329,7 @@ export default function ResumeBrowse() {
                     
                     return (
                       <button
-                        onClick={() => handleUnlock(resume.id)}
+                        onClick={() => handlePurchaseClick(resume)}
                         disabled={isPurchasing}
                         className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-colors flex items-center justify-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -479,38 +442,8 @@ export default function ResumeBrowse() {
                 {/* If simple encryption and not decrypted, show key input */}
                 {selectedResume.encryption_type !== 'seal' && !decryptedData && (
                   <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">🔑 Encryption Key Required</h3>
-                    <p className="text-gray-700 mb-4">
-                      This resume is protected with simple encryption, please enter the key to view content
-                    </p>
-                    
-                    <div className="bg-yellow-50 border border-yellow-300 rounded p-3 mb-4 text-sm">
-                      <div className="flex items-start gap-2">
-                        <span className="text-yellow-600">💡</span>
-                        <div className="text-yellow-800">
-                          <p className="font-semibold mb-1">Where is the key?</p>
-                          <ul className="space-y-1 text-xs">
-                            <li>• If you are the resume owner, the key was displayed when creating the resume</li>
-                            <li>• If you saved it locally, refreshing the page will auto-fill it</li>
-                            <li>• If you are an HR, please request the key from the resume owner</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="space-y-3">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Encryption Key *
-                      </label>
-                      <div className="flex gap-3">
-                        <textarea
-                          value={decryptKey}
-                          onChange={(e) => setDecryptKey(e.target.value)}
-                          placeholder="Please paste your encryption key..."
-                          rows={4}
-                          className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm resize-none"
-                        />
-                      </div>
+                      
                       
                       <div className="flex gap-3">
                         <button
@@ -532,9 +465,7 @@ export default function ResumeBrowse() {
                         </button>
                       </div>
                       
-                      <p className="text-xs text-gray-500 text-center">
-                        💡 Tip: If you chose to save the key locally when creating the resume, you don't need to enter it manually. If you forget the key, the resume content cannot be recovered.
-                      </p>
+                     
                     </div>
                   </div>
                 )}
@@ -580,27 +511,27 @@ export default function ResumeBrowse() {
                       <h3 className="text-xl font-bold text-gray-900 mb-4">📋 Basic Information</h3>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-600">Name：</span>
+                          <span className="text-gray-600">Name:</span>
                           <span className="font-medium text-gray-900">{decryptedData.personal?.name || 'Not provided'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Gender：</span>
+                          <span className="text-gray-600">Gender:</span>
                           <span className="font-medium text-gray-900">{decryptedData.personal?.gender || 'Not provided'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Date of Birth：</span>
+                          <span className="text-gray-600">Date of Birth:</span>
                           <span className="font-medium text-gray-900">{decryptedData.personal?.birth_date || 'Not provided'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Work Start Date：</span>
+                          <span className="text-gray-600">Work Start Date:</span>
                           <span className="font-medium text-gray-900">{decryptedData.personal?.work_start_date || 'Not provided'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Contact：</span>
+                          <span className="text-gray-600">Contact:</span>
                           <span className="font-medium text-gray-900">{decryptedData.personal?.contact || decryptedData.personal?.phone || 'Not provided'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Job Status：</span>
+                          <span className="text-gray-600">Job Status:</span>
                           <span className="font-medium text-gray-900">{decryptedData.personal?.job_status || 'Not provided'}</span>
                         </div>
                       </div>
@@ -611,29 +542,29 @@ export default function ResumeBrowse() {
                       <h3 className="text-xl font-bold text-gray-900 mb-4">🎯 Desired Position</h3>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-600">Position：</span>
+                          <span className="text-gray-600">Position:</span>
                           <span className="font-medium text-gray-900">{decryptedData.desired_position?.position || 'Not provided'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Job Type：</span>
+                          <span className="text-gray-600">Job Type:</span>
                           <span className="font-medium text-gray-900">{decryptedData.desired_position?.job_type || 'Not provided'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Industry：</span>
+                          <span className="text-gray-600">Industry:</span>
                           <span className="font-medium text-gray-900">{decryptedData.desired_position?.industry || 'Not provided'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">City：</span>
+                          <span className="text-gray-600">City:</span>
                           <span className="font-medium text-gray-900">{decryptedData.desired_position?.city || 'Not provided'}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Minimum Salary：</span>
+                          <span className="text-gray-600">Minimum Salary:</span>
                           <span className="font-medium text-gray-900">
                             {decryptedData.desired_position?.salary_min ? `${(decryptedData.desired_position.salary_min / 1000).toFixed(0)}K` : 'Not provided'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Maximum Salary：</span>
+                          <span className="text-gray-600">Maximum Salary:</span>
                           <span className="font-medium text-gray-900">
                             {decryptedData.desired_position?.salary_max ? `${(decryptedData.desired_position.salary_max / 1000).toFixed(0)}K` : 'Not provided'}
                           </span>
@@ -776,6 +707,30 @@ export default function ResumeBrowse() {
             </div>
           </div>
         )}
+        {/* Purchase Confirmation Dialog */}
+        <Dialog
+          open={openPurchaseDialog}
+          onClose={handleClosePurchaseDialog}
+          aria-labelledby="purchase-dialog-title"
+        >
+          <DialogTitle id="purchase-dialog-title">Confirm Purchase</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Pay {resumeToPurchase ? (parseInt(resumeToPurchase.priceRaw || 0) / 1000000000).toFixed(9) : '0'} SUI to access this resume.
+            </Typography>
+            <Typography sx={{ mt: 2, color: 'text.secondary', fontSize: '0.875rem' }}>
+              You will get permanent access after payment.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClosePurchaseDialog} color="inherit">
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmPurchase} variant="contained" color="primary" autoFocus>
+              Confirm Payment
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
     </PageLayout>
   );

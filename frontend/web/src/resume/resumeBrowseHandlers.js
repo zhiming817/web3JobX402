@@ -59,12 +59,12 @@ export const loadResumeSummaries = async () => {
       const encryptionMode = resume.encryption_mode || 'subscription';
       
       // 根据加密模式生成不同的提示文本
-      let highlightsText = '暂无介绍';
+      let highlightsText = 'No introduction available.';
       if (isSealed) {
         if (encryptionMode === 'allowlist') {
-          highlightsText = '🔒 此简历使用 Seal 加密，授权后可查看完整内容';
+          highlightsText = '🔒 This resume is encrypted with Seal; you can view the full content after authorization.';
         } else {
-          highlightsText = '🔒 此简历使用 Seal 加密，购买订阅后可查看完整内容';
+          highlightsText = '🔒 This resume is encrypted using Seal. You can view the full content after purchasing a subscription.';
         }
       }
       
@@ -72,12 +72,12 @@ export const loadResumeSummaries = async () => {
         id: resume.id,
         resumeId: resume.id,
         // Seal 加密的简历在列表中显示占位符
-        name: isSealed ? '🔐 加密简历' : '未知',
-        title: isSealed ? '-' : '未填写职位',
-        experience: isSealed ? '-' : '未知',
-        education: isSealed ? '-' : '未知',
-        jobStatus: isSealed ? '-' : '未知',
-        location: isSealed ? '-' : '未知',
+        name: resume.name ? resume.name : 'unknown',
+        title: isSealed ? '-' : 'unknown',
+        experience: isSealed ? '-' : 'unknown',
+        education: isSealed ? '-' : 'unknown',
+        jobStatus: isSealed ? '-' : 'unknown',
+        location: isSealed ? '-' : 'unknown',
         salary: isSealed ? '-' : '-',
         skills: isSealed ? ['-'] : [],
         highlights: highlightsText,
@@ -124,7 +124,7 @@ export const handleUnlock = async ({
   handleViewResumeCallback,
 }) => {
   if (!connected || !publicKey) {
-    alert('请先连接钱包！');
+    alert('Please connect your wallet first!');
     return;
   }
 
@@ -137,16 +137,14 @@ export const handleUnlock = async ({
   );
   
   if (hasSubscription) {
-    alert('您已购买此简历的访问权限！');
+    alert('You have already purchased access to this resume!');
     await handleViewResumeCallback({ ...resume, isLocked: false });
     return;
   }
 
-  const confirmed = window.confirm(
-    `购买简历访问权限需要支付 ${resume.price}\n\n✅ 支付后可永久查看此简历\n✅ 支付直接转给简历所有者\n\n确定要购买吗？`
-  );
-
-  if (!confirmed) return;
+  // 移除 window.confirm，改由 UI 层处理确认
+  // const confirmed = window.confirm(...);
+  // if (!confirmed) return;
 
   setIsPurchasing(true);
   try {
@@ -162,7 +160,7 @@ export const handleUnlock = async ({
     );
     
     if (!serviceDetails) {
-      throw new Error('简历服务不存在，请联系简历所有者');
+      throw new Error('Resume service does not exist, please contact the owner');
     }
     
     console.log('✅ 服务详情:', serviceDetails);
@@ -279,12 +277,12 @@ export const handleUnlock = async ({
             // 订阅信息已经在区块链上，通过 Subscription NFT 验证
             
             if (retries >= maxRetries) {
-              alert('⚠️ 购买成功，但订阅信息同步需要时间，请稍后刷新页面重试');
+              alert('⚠️ Purchase successful, but subscription sync takes time. Please refresh later.');
               resolve();
               return;
             }
             
-            alert('🎉 购买成功！现在可以查看完整简历了');
+            alert('🎉 Purchase successful! You can now view the full resume.');
             
             // 7. 自动打开查看
             console.log('🔓 准备解密简历...');
@@ -293,7 +291,7 @@ export const handleUnlock = async ({
           },
           onError: (error) => {
             console.error('❌ 支付失败:', error);
-            alert(`支付失败: ${error.message}\n\n可能原因：\n1. 钱包余额不足\n2. 用户取消交易\n3. 网络错误`);
+            alert(`Payment failed: ${error.message}\n\nPossible reasons:\n1. Insufficient balance\n2. User cancelled transaction\n3. Network error`);
             reject(error);
           },
         }
@@ -302,7 +300,7 @@ export const handleUnlock = async ({
 
   } catch (err) {
     console.error('购买订阅失败:', err);
-    alert(`购买失败: ${err.message}`);
+    alert(`Purchase failed: ${err.message}`);
     throw err;
   } finally {
     setIsPurchasing(false);
@@ -338,20 +336,20 @@ export const handleViewResume = async (resume, callbacks) => {
  * 计算工作年限
  */
 const calculateExperience = (workStartDate) => {
-  if (!workStartDate) return '未知';
+  if (!workStartDate) return 'unknown';
   
   try {
     const startYear = new Date(workStartDate).getFullYear();
     const currentYear = new Date().getFullYear();
     const years = currentYear - startYear;
     
-    if (years < 1) return '1年以下';
-    if (years <= 3) return '1-3年';
-    if (years <= 5) return '3-5年';
-    if (years <= 10) return '5-10年';
-    return '10年以上';
+    if (years < 1) return '< 1 year';
+    if (years <= 3) return '1-3 years';
+    if (years <= 5) return '3-5 years';
+    if (years <= 10) return '5-10 years';
+    return '10+ years';
   } catch {
-    return '未知';
+    return 'unknown';
   }
 };
 
@@ -359,18 +357,18 @@ const calculateExperience = (workStartDate) => {
  * 获取学历
  */
 const getEducationLevel = (educationArray) => {
-  if (!educationArray || educationArray.length === 0) return '未知';
-  return educationArray[0].degree || '未知';
+  if (!educationArray || educationArray.length === 0) return 'unknown';
+  return educationArray[0].degree || 'unknown';
 };
 
 /**
  * 格式化薪资
  */
 const formatSalary = (min, max) => {
-  if (!min && !max) return '面议';
+  if (!min && !max) return 'Negotiable';
   if (min && max) return `${(min/1000).toFixed(0)}-${(max/1000).toFixed(0)}K`;
   if (min) return `${(min/1000).toFixed(0)}K+`;
-  return '面议';
+  return 'Negotiable';
 };
 
 /**
@@ -399,7 +397,7 @@ export const handleDecryptResume = async ({
   setResumes,
 }) => {
   if (!currentAccount) {
-    setError('请先连接钱包');
+    setError('Please connect wallet first');
     return;
   }
 
@@ -434,7 +432,7 @@ export const handleDecryptResume = async ({
       const policyObjectId = resume.rawData?.policy_object_id;
       
       if (!blobId || !encryptionId) {
-        throw new Error('Seal 加密简历信息不完整');
+        throw new Error('Seal encrypted resume information is incomplete');
       }
 
       // Allowlist 模式：直接使用 Allowlist 验证
@@ -442,7 +440,7 @@ export const handleDecryptResume = async ({
         console.log('🔓 使用 Allowlist 模式解密（无需订阅）');
         
         if (!policyObjectId) {
-          throw new Error('Allowlist ID 缺失');
+          throw new Error('Allowlist ID missing');
         }
 
         console.log('📋 Allowlist 解密参数:', {
@@ -505,7 +503,7 @@ export const handleDecryptResume = async ({
       });
       
       if (!policyObjectId) {
-        throw new Error('Service ID (policyObjectId) 缺失');
+        throw new Error('Service ID (policyObjectId) missing');
       }
 
       // 1. 查找对应的订阅
@@ -522,9 +520,9 @@ export const handleDecryptResume = async ({
       );
       
       if (!subscription) {
-        throw new Error(`未找到有效订阅，请先购买访问权限。
-已有订阅: ${userSubscriptions.map(s => s.service_id).join(', ')}
-需要订阅: ${policyObjectId}`);
+        throw new Error(`No valid subscription found, please purchase access first.
+Existing subscriptions: ${userSubscriptions.map(s => s.service_id).join(', ')}
+Required subscription: ${policyObjectId}`);
       }
       
       console.log('✅ 找到订阅:', subscription);
@@ -534,7 +532,7 @@ export const handleDecryptResume = async ({
       const currentTime = Date.now();
       
       if (!isSubscriptionValid(subscription, serviceDetails, currentTime)) {
-        throw new Error('订阅已过期，请重新购买');
+        throw new Error('Subscription expired, please repurchase');
       }
       
       console.log('✅ 订阅有效');
@@ -643,12 +641,12 @@ export const handleDecryptResume = async ({
     } else {
       // 简单加密：使用密钥
       if (!decryptKey) {
-        throw new Error('请输入解密密钥');
+        throw new Error('Please enter decryption key');
       }
 
       const blobId = resume.rawData?.blob_id;
       if (!blobId) {
-        throw new Error('简历数据不完整');
+        throw new Error('Resume data incomplete');
       }
 
       console.log('使用简单加密解密:', blobId);
@@ -690,7 +688,7 @@ export const handleDecryptResume = async ({
 
   } catch (err) {
     console.error('解密失败:', err);
-    setError(err.message || '解密简历失败');
+    setError(err.message || 'Failed to decrypt resume');
     
     // 创建访问记录（解密失败）
     try {

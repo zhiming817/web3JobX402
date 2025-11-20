@@ -258,13 +258,13 @@ class ResumeService {
    * 设置简历价格
    * @param {string} resumeId - 简历 ID
    * @param {string} owner - 所有者钱包地址
-   * @param {number} priceInUSDC - 价格（USDC）
+   * @param {number} priceInSUI - 价格（SUI）
    * @returns {Promise<object>} 设置结果
    */
-  async setResumePrice(resumeId, owner, priceInUSDC) {
+  async setResumePrice(resumeId, owner, priceInSUI) {
     try {
-      // 将 USDC 转换为 units (1 USDC = 1,000,000 units, 6 decimals)
-      const priceInUnits = Math.floor(priceInUSDC * 1_000_000);
+      // 将 SUI 转换为 MIST (1 SUI = 1,000,000,000 MIST, 9 decimals)
+      const priceInUnits = Math.floor(priceInSUI * 1_000_000_000);
 
       const response = await httpClient.put('/api/resumes/price', {
         resume_id: resumeId,
@@ -275,13 +275,13 @@ class ResumeService {
       if (response.success) {
         return {
           success: true,
-          message: `简历价格已设置为 ${priceInUSDC} USDC`,
+          message: `Resume price set to ${priceInSUI} SUI`,
         };
       } else {
-        throw new Error(response.error || '设置简历价格失败');
+        throw new Error(response.error || 'Failed to set resume price');
       }
     } catch (error) {
-      console.error('设置简历价格失败:', error);
+      console.error('Failed to set resume price:', error);
       throw error;
     }
   }
