@@ -41,9 +41,9 @@ export default function ResumeList() {
           views: resume.view_count || 0,
           unlocks: resume.unlock_count || 0,
           encryptionMode, // Encryption mode
-          price: resume.price || 0, // Price (USDC minimal units, 6 decimals)
-          priceUSDC: isSubscription ? ((resume.price || 0) / 1_000_000).toFixed(2) + ' USDC' : null, // Show price only for subscription mode
-          earnings: isSubscription ? (((resume.price || 0) * (resume.unlock_count || 0)) / 1_000_000).toFixed(2) + ' USDC' : null, // Show earnings only for subscription mode
+          price: resume.price || 0, // Price (SUI MIST, 9 decimals)
+          priceSUI: isSubscription ? ((resume.price || 0) / 1_000_000_000).toFixed(2) + ' SUI' : null, // Show price only for subscription mode
+          earnings: isSubscription ? (((resume.price || 0) * (resume.unlock_count || 0)) / 1_000_000_000).toFixed(2) + ' SUI' : null, // Show earnings only for subscription mode
           status: resume.status || 'active',
           rawData: resume, // Save raw data
         };
@@ -79,9 +79,9 @@ export default function ResumeList() {
   const handleSetPrice = async (id) => {
     // Find current resume and display its current price
     const resume = resumes.find(r => r.id === id);
-    const currentPrice = resume ? ((resume.price || 0) / 1_000_000).toFixed(2) : '5.00';
+    const currentPrice = resume ? ((resume.price || 0) / 1_000_000_000).toFixed(2) : '5.00';
     
-    const price = prompt('Set resume unlock price (USDC):', currentPrice);
+    const price = prompt('Set resume unlock price (SUI):', currentPrice);
     if (price === null) return; // User cancelled
     
     const priceFloat = parseFloat(price);
@@ -94,7 +94,7 @@ export default function ResumeList() {
       const walletAddress = publicKey;
       await resumeService.setResumePrice(id, walletAddress, priceFloat);
       
-      alert(`Resume price set to ${priceFloat} USDC`);
+      alert(`Resume price set to ${priceFloat} SUI`);
       // Reload list to show updated price
       loadMyResumes();
     } catch (err) {
@@ -216,7 +216,7 @@ export default function ResumeList() {
                   {resumes
                     .filter(r => r.encryptionMode === 'subscription')
                     .reduce((acc, r) => acc + parseFloat(r.earnings || 0), 0)
-                    .toFixed(2)} USDC
+                    .toFixed(2)} SUI
                 </p>
               </div>
               <div className="text-4xl">💰</div>
@@ -286,7 +286,7 @@ export default function ResumeList() {
                       {resume.encryptionMode === 'subscription' && (
                         <>
                           <span className="flex items-center gap-1 font-semibold text-purple-600">
-                            💎 Price: {resume.priceUSDC}
+                            💎 Price: {resume.priceSUI}
                           </span>
                           <span className="flex items-center gap-1 font-semibold text-green-600">
                             💰 Earnings: {resume.earnings}

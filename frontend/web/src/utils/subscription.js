@@ -10,7 +10,7 @@ import { getSubscriptionTarget } from '../config/subscription.config';
 /**
  * 创建订阅服务（简历所有者调用）
  * @param {Object} params
- * @param {number} params.fee - 订阅费用 (USDC micro-units)
+ * @param {number} params.fee - 订阅费用 (SUI MIST, 9 decimals)
  * @param {number} params.ttl - 订阅时长 (毫秒)，0 表示永久
  * @param {string} params.name - 服务名称 (简历 ID)
  * @param {string} params.senderAddress - 发送者地址

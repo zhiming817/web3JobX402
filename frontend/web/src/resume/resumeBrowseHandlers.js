@@ -81,7 +81,7 @@ export const loadResumeSummaries = async () => {
         salary: isSealed ? '-' : '-',
         skills: isSealed ? ['-'] : [],
         highlights: highlightsText,
-        price: ((resume.price || 0) / 1_000_000).toFixed(2) + ' USDC',
+        price: ((resume.price || 0) / 1_000_000_000).toFixed(2) + ' SUI',
         priceRaw: resume.price || 0,
         isLocked: true,
         avatar: '/default-avatar.png',
