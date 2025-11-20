@@ -7,13 +7,55 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@
 import { resumeService } from '../services';
 import PublishBlobToAllowlist from './PublishBlobToAllowlist';
 import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Chip,
+  CircularProgress,
+  Container,
+  Divider,
+  Grid,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+  Alert,
+  Tooltip,
+  Collapse,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Snackbar
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  ContentCopy as CopyIcon,
+  Refresh as RefreshIcon,
+  Link as LinkIcon,
+  History as HistoryIcon,
+  Info as InfoIcon,
+  VpnKey as KeyIcon,
+  ListAlt as ListAltIcon,
+  ExpandMore as ExpandMoreIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
+import {
   fetchUserAllowlists,
   createAllowlistTransaction,
   createAddMemberTransaction,
   createRemoveMemberTransaction,
   validateSuiAddress,
   extractCreatedObjectIds,
-  formatAllowlistCreatedMessage,
   saveAllowlistToLocalStorage,
   loadAllowlistHistoryFromLocalStorage,
   copyToClipboard,
@@ -29,20 +71,33 @@ export default function AllowlistManager({ onAllowlistCreated }) {
   const [allowlistName, setAllowlistName] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [allowlistHistory, setAllowlistHistory] = useState(() => {
-    // 从 localStorage 加载历史记录
+    // Load history from localStorage
     return loadAllowlistHistoryFromLocalStorage();
   });
   const [isLoadingOnChain, setIsLoadingOnChain] = useState(false);
   const [onChainAllowlists, setOnChainAllowlists] = useState([]);
-  const [managingAllowlist, setManagingAllowlist] = useState(null); // 正在管理的 Allowlist
+  const [managingAllowlist, setManagingAllowlist] = useState(null); // Allowlist being managed
   const [newMemberAddress, setNewMemberAddress] = useState('');
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [isRemovingMember, setIsRemovingMember] = useState(false);
 
-  // 从链上查询用户的 Allowlist Cap 对象
+  // Dialog states
+  const [successDialog, setSuccessDialog] = useState({ open: false, title: '', content: null });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', content: '', onConfirm: null });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+
+  const handleCloseSuccessDialog = () => setSuccessDialog({ ...successDialog, open: false });
+  const handleCloseConfirmDialog = () => setConfirmDialog({ ...confirmDialog, open: false });
+  const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
+
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  // Query user's Allowlist Cap objects from chain
   const loadOnChainAllowlists = async () => {
     if (!currentAccount?.address) {
-      console.log('⚠️ 未连接钱包');
+      console.log('⚠️ Wallet not connected');
       return;
     }
 
@@ -51,38 +106,38 @@ export default function AllowlistManager({ onAllowlistCreated }) {
       const allowlists = await fetchUserAllowlists(suiClient, currentAccount.address);
       setOnChainAllowlists(allowlists);
     } catch (error) {
-      console.error('❌ 查询链上 Allowlist 失败:', error);
-      alert('查询链上数据失败: ' + error.message);
+      console.error('❌ Failed to query on-chain Allowlist:', error);
+      showSnackbar('Failed to query on-chain data: ' + error.message, 'error');
     } finally {
       setIsLoadingOnChain(false);
     }
   };
 
-  // 组件加载时自动查询链上数据
+  // Automatically query chain data when component loads
   useEffect(() => {
     if (currentAccount?.address) {
       loadOnChainAllowlists();
     }
   }, [currentAccount?.address]);
 
-  // 添加成员到白名单
+  // Add member to allowlist
   const handleAddMember = async (allowlist) => {
     const address = newMemberAddress.trim();
     
     if (!address) {
-      alert('请输入地址');
+      showSnackbar('Please enter an address', 'warning');
       return;
     }
 
-    // 验证地址格式
+    // Validate address format
     if (!validateSuiAddress(address)) {
-      alert('地址格式错误，必须是有效的 Sui 地址（0x 开头的十六进制字符串）');
+      showSnackbar('Invalid address format. Must be a valid Sui address (hex string starting with 0x)', 'error');
       return;
     }
 
     setIsAddingMember(true);
     try {
-      console.log('➕ 添加成员到白名单...', {
+      console.log('➕ Adding member to allowlist...', {
         allowlistId: allowlist.allowlistId,
         capId: allowlist.capId,
         address,
@@ -94,102 +149,177 @@ export default function AllowlistManager({ onAllowlistCreated }) {
         { transaction: tx },
         {
           onSuccess: (result) => {
-            console.log('✅ 成员添加成功!', result);
-            alert(`✅ 成功添加到白名单！\n\n地址: ${address}`);
+            console.log('✅ Member added successfully!', result);
+            showSnackbar(`✅ Successfully added to allowlist! Address: ${address}`, 'success');
             setNewMemberAddress('');
             setManagingAllowlist(null);
-            // 重新加载链上数据
+            // Reload on-chain data
             loadOnChainAllowlists();
           },
           onError: (error) => {
-            console.error('❌ 添加失败:', error);
-            alert('添加失败: ' + error.message);
+            console.error('❌ Add failed:', error);
+            showSnackbar('Add failed: ' + error.message, 'error');
           },
         }
       );
     } catch (error) {
-      console.error('❌ 添加失败:', error);
-      alert('添加失败: ' + error.message);
+      console.error('❌ Add failed:', error);
+      showSnackbar('Add failed: ' + error.message, 'error');
     } finally {
       setIsAddingMember(false);
     }
   };
 
-  // 从白名单移除成员
+  // Remove member from allowlist
   const handleRemoveMember = async (allowlist, memberAddress) => {
-    if (!confirm(`确认要移除这个地址吗？\n\n${memberAddress}`)) {
-      return;
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Confirm Removal',
+      content: `Are you sure you want to remove this address?\n\n${memberAddress}`,
+      onConfirm: async () => {
+        handleCloseConfirmDialog();
+        setIsRemovingMember(true);
+        try {
+          console.log('➖ Removing member from allowlist...', {
+            allowlistId: allowlist.allowlistId,
+            capId: allowlist.capId,
+            address: memberAddress,
+          });
 
-    setIsRemovingMember(true);
-    try {
-      console.log('➖ 从白名单移除成员...', {
-        allowlistId: allowlist.allowlistId,
-        capId: allowlist.capId,
-        address: memberAddress,
-      });
+          const tx = createRemoveMemberTransaction(allowlist.allowlistId, allowlist.capId, memberAddress);
 
-      const tx = createRemoveMemberTransaction(allowlist.allowlistId, allowlist.capId, memberAddress);
-
-      signAndExecute(
-        { transaction: tx },
-        {
-          onSuccess: (result) => {
-            console.log('✅ 成员移除成功!', result);
-            alert(`✅ 成功从白名单移除！\n\n地址: ${memberAddress}`);
-            // 重新加载链上数据
-            loadOnChainAllowlists();
-          },
-          onError: (error) => {
-            console.error('❌ 移除失败:', error);
-            alert('移除失败: ' + error.message);
-          },
+          signAndExecute(
+            { transaction: tx },
+            {
+              onSuccess: (result) => {
+                console.log('✅ Member removed successfully!', result);
+                showSnackbar(`✅ Successfully removed from allowlist! Address: ${memberAddress}`, 'success');
+                // Reload on-chain data
+                loadOnChainAllowlists();
+              },
+              onError: (error) => {
+                console.error('❌ Remove failed:', error);
+                showSnackbar('Remove failed: ' + error.message, 'error');
+              },
+            }
+          );
+        } catch (error) {
+          console.error('❌ Remove failed:', error);
+          showSnackbar('Remove failed: ' + error.message, 'error');
+        } finally {
+          setIsRemovingMember(false);
         }
-      );
-    } catch (error) {
-      console.error('❌ 移除失败:', error);
-      alert('移除失败: ' + error.message);
-    } finally {
-      setIsRemovingMember(false);
-    }
+      }
+    });
   };
 
-  // 创建新的 Allowlist
+  // Create new Allowlist
   const handleCreateAllowlist = async () => {
     if (!allowlistName.trim()) {
-      alert('请输入 Allowlist 名称');
+      showSnackbar('Please enter an Allowlist name', 'warning');
       return;
     }
 
     setIsCreating(true);
 
     try {
-      console.log('🆕 创建 Allowlist...');
+      console.log('🆕 Creating Allowlist...');
       
       const tx = createAllowlistTransaction(allowlistName);
 
       signAndExecute(
-        { transaction: tx },
+        { 
+          transaction: tx,
+          options: {
+            showEffects: true,
+            showObjectChanges: true,
+            showEvents: true,
+          }
+        },
         {
-          onSuccess: (result) => {
-            console.log('✅ Allowlist 创建成功!', result);
+          onSuccess: async (result) => {
+            console.log('✅ Allowlist created (initial result):', result);
             
-            // 解析创建的对象获取 allowlistId 和 capId
-            const { allowlistId, capId } = extractCreatedObjectIds(result);
+            let txData = result;
+
+            // Fetch full transaction details to ensure we have events and object changes
+            // The initial result might be missing these details depending on the wallet/SDK version
+            try {
+              console.log('⏳ Fetching full transaction details...');
+              txData = await suiClient.waitForTransaction({
+                digest: result.digest,
+                options: {
+                  showEffects: true,
+                  showObjectChanges: true,
+                  showEvents: true
+                }
+              });
+              console.log('✅ Full transaction details fetched:', txData);
+            } catch (err) {
+              console.error('⚠️ Failed to fetch full transaction details, using initial result:', err);
+            }
             
-            // 构建详细的成功消息
-            const message = formatAllowlistCreatedMessage(allowlistId, capId, result.digest);
-            alert(message);
+            // Parse created objects to get allowlistId and capId
+            const { allowlistId, capId } = extractCreatedObjectIds(txData);
             
-            // 尝试复制 Allowlist ID 到剪贴板
+            console.log('Parsed IDs:', { allowlistId, capId });
+
+            // Build detailed success message content
+            const successContent = (
+              <Box>
+                <Typography variant="body1" gutterBottom>
+                  ✅ Allowlist created successfully!
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Please copy the following IDs for resume creation:
+                </Typography>
+                
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" color="primary">🔗 Allowlist ID:</Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Paper variant="outlined" sx={{ p: 1, bgcolor: 'grey.100', flex: 1, fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+                      {allowlistId || '(Check in Explorer)'}
+                    </Paper>
+                    <IconButton size="small" onClick={() => copyToClipboard(allowlistId, 'Allowlist ID')}>
+                      <CopyIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                </Box>
+
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" color="primary">🔑 Cap ID:</Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Paper variant="outlined" sx={{ p: 1, bgcolor: 'grey.100', flex: 1, fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+                      {capId || '(Check in Explorer)'}
+                    </Paper>
+                    <IconButton size="small" onClick={() => copyToClipboard(capId, 'Cap ID')}>
+                      <CopyIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                </Box>
+
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  These two IDs are required when creating your resume.
+                </Alert>
+
+                <Typography variant="caption" display="block" gutterBottom>
+                  Transaction Hash: {result.digest}
+                </Typography>
+              </Box>
+            );
+
+            setSuccessDialog({
+              open: true,
+              title: 'Allowlist Created',
+              content: successContent
+            });
+            
+            // Try to copy Allowlist ID to clipboard
             if (allowlistId) {
               copyToClipboard(allowlistId, 'Allowlist ID');
             }
             
-            // 打开浏览器
-            openSuiExplorerTx(result.digest);
-            
-            // 保存到历史记录
+            // Save to history
             if (allowlistId && capId) {
               const newRecord = saveAllowlistToLocalStorage(
                 allowlistName,
@@ -203,7 +333,7 @@ export default function AllowlistManager({ onAllowlistCreated }) {
             setAllowlistName('');
             setShowCreateForm(false);
             
-            // 重新加载链上数据
+            // Reload on-chain data
             loadOnChainAllowlists();
             
             if (onAllowlistCreated) {
@@ -211,357 +341,447 @@ export default function AllowlistManager({ onAllowlistCreated }) {
             }
           },
           onError: (error) => {
-            console.error('❌ 创建失败:', error);
-            alert('创建失败: ' + error.message);
+            console.error('❌ Creation failed:', error);
+            showSnackbar('Creation failed: ' + error.message, 'error');
           },
         }
       );
     } catch (error) {
-      console.error('❌ 创建失败:', error);
-      alert('创建失败: ' + error.message);
+      console.error('❌ Creation failed:', error);
+      showSnackbar('Creation failed: ' + error.message, 'error');
     } finally {
       setIsCreating(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900">Allowlist 管理</h2>
-        <button
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+      {/* Dialogs and Snackbars */}
+      <Dialog open={successDialog.open} onClose={handleCloseSuccessDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>{successDialog.title}</DialogTitle>
+        <DialogContent>
+          {successDialog.content}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSuccessDialog} color="primary" variant="contained">
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={confirmDialog.open} onClose={handleCloseConfirmDialog}>
+        <DialogTitle>{confirmDialog.title}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ whiteSpace: 'pre-wrap' }}>
+            {confirmDialog.content}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseConfirmDialog} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={confirmDialog.onConfirm} color="error" variant="contained" autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h5" component="h2" fontWeight="bold">
+          Allowlist Management
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={showCreateForm ? <CloseIcon /> : <AddIcon />}
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          {showCreateForm ? '取消' : '创建新 Allowlist'}
-        </button>
-      </div>
+          {showCreateForm ? 'Cancel' : 'Create New Allowlist'}
+        </Button>
+      </Box>
 
-      {showCreateForm && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">
-            创建访问控制列表
-          </h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Allowlist 名称 *
-              </label>
-              <input
-                type="text"
-                value={allowlistName}
-                onChange={(e) => setAllowlistName(e.target.value)}
-                placeholder="例如: My Resume Access Control"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+      <Collapse in={showCreateForm}>
+        <Card variant="outlined" sx={{ mb: 4, bgcolor: 'primary.50', borderColor: 'primary.200' }}>
+          <CardContent>
+            <Typography variant="h6" color="primary.main" gutterBottom>
+              Create Access Control List
+            </Typography>
+            
+            <Stack spacing={3}>
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Allowlist Name *
+                </Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  placeholder="e.g., My Resume Access Control"
+                  value={allowlistName}
+                  onChange={(e) => setAllowlistName(e.target.value)}
+                  size="small"
+                  sx={{ bgcolor: 'white' }}
+                />
+              </Box>
 
-            <div className="bg-white p-4 rounded border border-blue-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-2">
-                📝 说明
-              </h4>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Allowlist 用于控制谁可以访问您的加密简历</li>
-                <li>• 创建后会生成 Allowlist ID 和 Cap ID</li>
-                <li>• Allowlist ID 用于加密简历</li>
-                <li>• Cap ID 用于管理白名单（添加/移除地址）</li>
-                <li>• 这是链上操作，需要支付 Gas 费用</li>
-              </ul>
-            </div>
+              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'white' }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  📝 Instructions
+                </Typography>
+                <Typography variant="body2" color="text.secondary" component="div">
+                  <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                    <li>Allowlist controls who can access your encrypted resume.</li>
+                    <li>Creating one generates an Allowlist ID and a Cap ID.</li>
+                    <li>Allowlist ID is used to encrypt the resume.</li>
+                    <li>Cap ID is used to manage the allowlist (add/remove addresses).</li>
+                    <li>This is an on-chain operation and requires Gas fees.</li>
+                  </ul>
+                </Typography>
+              </Paper>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handleCreateAllowlist}
-                disabled={isCreating || !allowlistName.trim()}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isCreating ? '创建中...' : '创建 Allowlist'}
-              </button>
-              <button
-                onClick={() => setShowCreateForm(false)}
-                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                取消
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <Stack direction="row" spacing={2}>
+                <Button
+                  variant="contained"
+                  onClick={handleCreateAllowlist}
+                  disabled={isCreating || !allowlistName.trim()}
+                  startIcon={isCreating && <CircularProgress size={20} color="inherit" />}
+                >
+                  {isCreating ? 'Creating...' : 'Create Allowlist'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => setShowCreateForm(false)}
+                >
+                  Cancel
+                </Button>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Collapse>
 
-      {/* 链上 Allowlist 列表 */}
-      <div className="mt-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900">
-            🔗 链上 Allowlist 列表
-          </h3>
-          <button
+      {/* On-Chain Allowlist List */}
+      <Box sx={{ mt: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6">
+            🔗 On-Chain Allowlist
+          </Typography>
+          <Button
+            variant="contained"
+            color="success"
+            size="small"
+            startIcon={isLoadingOnChain ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
             onClick={loadOnChainAllowlists}
             disabled={isLoadingOnChain || !currentAccount?.address}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 text-sm"
           >
-            {isLoadingOnChain ? '加载中...' : '刷新'}
-          </button>
-        </div>
+            {isLoadingOnChain ? 'Loading...' : 'Refresh'}
+          </Button>
+        </Box>
 
         {!currentAccount?.address ? (
-          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-            <p className="text-sm text-yellow-800">
-              ⚠️ 请先连接钱包以查看链上数据
-            </p>
-          </div>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            ⚠️ Please connect wallet to view on-chain data.
+          </Alert>
         ) : isLoadingOnChain ? (
-          <div className="bg-gray-50 p-8 rounded-lg border border-gray-200 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">正在从链上加载数据...</p>
-          </div>
+          <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50', borderRadius: 1 }}>
+            <CircularProgress size={32} sx={{ mb: 1 }} />
+            <Typography variant="body2" color="text.secondary">
+              Loading data from chain...
+            </Typography>
+          </Box>
         ) : onChainAllowlists.length === 0 ? (
-          <div className="bg-gray-50 p-8 rounded-lg border border-gray-200 text-center">
-            <p className="text-gray-600">📭 暂无 Allowlist</p>
-            <p className="text-sm text-gray-500 mt-2">创建第一个 Allowlist 开始使用</p>
-          </div>
+          <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Typography color="text.secondary" gutterBottom>
+              📭 No Allowlist found
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Create your first Allowlist to get started.
+            </Typography>
+          </Box>
         ) : (
-          <div className="space-y-3">
+          <Stack spacing={2}>
             {onChainAllowlists.map((allowlist, index) => (
-              <div key={index} className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <span className="text-green-600">🔗</span>
-                    {allowlist.name}
-                  </h4>
-                  <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">
-                    链上数据
-                  </span>
-                </div>
+              <Card key={index} variant="outlined" sx={{ borderColor: 'success.light', bgcolor: '#f0fdf4' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <span role="img" aria-label="link">🔗</span> {allowlist.name}
+                    </Typography>
+                    <Chip label="On-Chain Data" color="success" size="small" />
+                  </Box>
 
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <label className="text-gray-600 block mb-1">Allowlist ID:</label>
-                    <div className="flex gap-2">
-                      <code className="flex-1 bg-white px-3 py-2 rounded border border-gray-200 text-xs break-all">
-                        {allowlist.allowlistId}
-                      </code>
-                      <button
-                        onClick={() => {
-                          copyToClipboard(allowlist.allowlistId, 'Allowlist ID');
-                          alert('✅ Allowlist ID 已复制');
-                        }}
-                        className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs whitespace-nowrap"
-                      >
-                        复制
-                      </button>
-                    </div>
-                  </div>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Allowlist ID:</Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Paper variant="outlined" sx={{ p: 0.5, px: 1, bgcolor: 'white', flex: 1, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                          {allowlist.allowlistId}
+                        </Paper>
+                        <Tooltip title="Copy Allowlist ID">
+                          <IconButton size="small" onClick={() => {
+                            copyToClipboard(allowlist.allowlistId, 'Allowlist ID');
+                            alert('✅ Allowlist ID copied');
+                          }}>
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </Box>
 
-                  <div>
-                    <label className="text-gray-600 block mb-1">Cap ID:</label>
-                    <div className="flex gap-2">
-                      <code className="flex-1 bg-white px-3 py-2 rounded border border-gray-200 text-xs break-all">
-                        {allowlist.capId}
-                      </code>
-                      <button
-                        onClick={() => {
-                          copyToClipboard(allowlist.capId, 'Cap ID');
-                          alert('✅ Cap ID 已复制');
-                        }}
-                        className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs whitespace-nowrap"
-                      >
-                        复制
-                      </button>
-                    </div>
-                  </div>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Cap ID:</Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Paper variant="outlined" sx={{ p: 0.5, px: 1, bgcolor: 'white', flex: 1, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                          {allowlist.capId}
+                        </Paper>
+                        <Tooltip title="Copy Cap ID">
+                          <IconButton size="small" onClick={() => {
+                            copyToClipboard(allowlist.capId, 'Cap ID');
+                            alert('✅ Cap ID copied');
+                          }}>
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </Box>
 
-                  <div>
-                    <label className="text-gray-600 block mb-1">
-                      白名单成员 ({allowlist.members.length}):
-                    </label>
-                    {allowlist.members.length === 0 ? (
-                      <div className="bg-white px-3 py-2 rounded border border-gray-200 text-gray-500 text-xs">
-                        暂无成员
-                      </div>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" gutterBottom>
+                        Allowlist Members ({allowlist.members.length}):
+                      </Typography>
+                      {allowlist.members.length === 0 ? (
+                        <Paper variant="outlined" sx={{ p: 1, bgcolor: 'white', color: 'text.secondary', fontSize: '0.75rem' }}>
+                          No members
+                        </Paper>
+                      ) : (
+                        <Paper variant="outlined" sx={{ maxHeight: 150, overflowY: 'auto', bgcolor: 'white' }}>
+                          <List dense disablePadding>
+                            {allowlist.members.map((member, idx) => (
+                              <ListItem key={idx} divider>
+                                <ListItemText 
+                                  primary={member} 
+                                  primaryTypographyProps={{ variant: 'caption', fontFamily: 'monospace' }} 
+                                />
+                                <ListItemSecondaryAction>
+                                  <IconButton 
+                                    edge="end" 
+                                    size="small" 
+                                    color="error"
+                                    onClick={() => handleRemoveMember(allowlist, member)}
+                                    disabled={isRemovingMember}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </ListItemSecondaryAction>
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Paper>
+                      )}
+                    </Box>
+
+                    {/* Add Member Form */}
+                    {managingAllowlist?.allowlistId === allowlist.allowlistId ? (
+                      <Paper variant="outlined" sx={{ p: 2, bgcolor: 'primary.50', borderColor: 'primary.200' }}>
+                        <Typography variant="subtitle2" color="primary.dark" gutterBottom>
+                          Add New Member
+                        </Typography>
+                        <Stack direction="row" spacing={1}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            placeholder="Enter Sui Address (0x...)"
+                            value={newMemberAddress}
+                            onChange={(e) => setNewMemberAddress(e.target.value)}
+                            sx={{ bgcolor: 'white' }}
+                          />
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => handleAddMember(allowlist)}
+                            disabled={isAddingMember || !newMemberAddress.trim()}
+                          >
+                            {isAddingMember ? 'Adding...' : 'Add'}
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            color="inherit"
+                            onClick={() => {
+                              setManagingAllowlist(null);
+                              setNewMemberAddress('');
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </Stack>
+                      </Paper>
                     ) : (
-                      <div className="bg-white px-3 py-2 rounded border border-gray-200 max-h-32 overflow-y-auto">
-                        {allowlist.members.map((member, idx) => (
-                          <div key={idx} className="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">
-                            <code className="text-xs text-gray-700 font-mono flex-1 truncate">
-                              {member}
-                            </code>
-                            <button
-                              onClick={() => handleRemoveMember(allowlist, member)}
-                              disabled={isRemovingMember}
-                              className="ml-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs disabled:opacity-50"
-                              title="移除此地址"
-                            >
-                              移除
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => setManagingAllowlist(allowlist)}
+                        fullWidth
+                      >
+                        Add Member
+                      </Button>
                     )}
-                  </div>
+                  </Stack>
 
-                  {/* 添加成员表单 */}
-                  {managingAllowlist?.allowlistId === allowlist.allowlistId ? (
-                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                      <h5 className="text-sm font-semibold text-blue-900 mb-2">添加新成员</h5>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newMemberAddress}
-                          onChange={(e) => setNewMemberAddress(e.target.value)}
-                          placeholder="输入 Sui 地址 (0x...)"
-                          className="flex-1 px-3 py-2 border border-blue-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                          onClick={() => handleAddMember(allowlist)}
-                          disabled={isAddingMember || !newMemberAddress.trim()}
-                          className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs disabled:opacity-50 whitespace-nowrap"
-                        >
-                          {isAddingMember ? '添加中...' : '添加'}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setManagingAllowlist(null);
-                            setNewMemberAddress('');
-                          }}
-                          className="px-3 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
-                        >
-                          取消
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setManagingAllowlist(allowlist)}
-                      className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                  {/* Publish Blob Component */}
+                  <Box sx={{ mt: 2 }}>
+                    <PublishBlobToAllowlist
+                      allowlistId={allowlist.allowlistId}
+                      capId={allowlist.capId}
+                      onPublished={(data) => {
+                        console.log('✅ Blob associated:', data);
+                      }}
+                    />
+                  </Box>
+
+                  <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      fullWidth
+                      onClick={() => openSuiExplorer(allowlist.allowlistId)}
                     >
-                      ➕ 添加成员
-                    </button>
-                  )}
-                </div>
-
-                {/* 关联 Blob 功能 */}
-                <div className="mt-3">
-                  <PublishBlobToAllowlist
-                    allowlistId={allowlist.allowlistId}
-                    capId={allowlist.capId}
-                    onPublished={(data) => {
-                      console.log('✅ Blob 已关联:', data);
-                      // 可以选择刷新列表或显示通知
-                    }}
-                  />
-                </div>
-
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => openSuiExplorer(allowlist.allowlistId)}
-                    className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs"
-                  >
-                    查看 Allowlist
-                  </button>
-                  <button
-                    onClick={() => openSuiExplorer(allowlist.capId)}
-                    className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
-                  >
-                    查看 Cap
-                  </button>
-                </div>
-              </div>
+                      View Allowlist
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      fullWidth
+                      onClick={() => openSuiExplorer(allowlist.capId)}
+                    >
+                      View Cap
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
             ))}
-          </div>
+          </Stack>
         )}
-      </div>
+      </Box>
 
-      {/* 历史记录 */}
+      {/* History */}
       {allowlistHistory.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            📚 本地历史记录
-          </h3>
-          <div className="space-y-3">
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            📚 Local History
+          </Typography>
+          <Stack spacing={2}>
             {allowlistHistory.map((record, index) => (
-              <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-gray-900">{record.name}</h4>
-                  <span className="text-xs text-gray-500">
-                    {new Date(record.createdAt).toLocaleString('zh-CN')}
-                  </span>
-                </div>
-                
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <label className="text-gray-600 font-medium">🔗 Allowlist ID:</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <code className="flex-1 bg-white px-3 py-2 rounded border border-gray-300 text-xs break-all">
-                        {record.allowlistId}
-                      </code>
-                      <button
-                        onClick={() => {
-                          copyToClipboard(record.allowlistId, 'Allowlist ID');
-                          alert('✅ Allowlist ID 已复制到剪贴板');
-                        }}
-                        className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
-                      >
-                        复制
-                      </button>
-                    </div>
-                  </div>
+              <Card key={index} variant="outlined" sx={{ bgcolor: 'grey.50' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="subtitle2" fontWeight="bold">{record.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(record.createdAt).toLocaleString()}
+                    </Typography>
+                  </Box>
                   
-                  <div>
-                    <label className="text-gray-600 font-medium">🔑 Cap ID:</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <code className="flex-1 bg-white px-3 py-2 rounded border border-gray-300 text-xs break-all">
-                        {record.capId}
-                      </code>
-                      <button
-                        onClick={() => {
-                          copyToClipboard(record.capId, 'Cap ID');
-                          alert('✅ Cap ID 已复制到剪贴板');
-                        }}
-                        className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                  <Stack spacing={1}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">🔗 Allowlist ID:</Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Paper variant="outlined" sx={{ p: 0.5, px: 1, bgcolor: 'white', flex: 1, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                          {record.allowlistId}
+                        </Paper>
+                        <Tooltip title="Copy Allowlist ID">
+                          <IconButton size="small" onClick={() => {
+                            copyToClipboard(record.allowlistId, 'Allowlist ID');
+                            alert('✅ Allowlist ID copied to clipboard');
+                          }}>
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">🔑 Cap ID:</Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Paper variant="outlined" sx={{ p: 0.5, px: 1, bgcolor: 'white', flex: 1, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                          {record.capId}
+                        </Paper>
+                        <Tooltip title="Copy Cap ID">
+                          <IconButton size="small" onClick={() => {
+                            copyToClipboard(record.capId, 'Cap ID');
+                            alert('✅ Cap ID copied to clipboard');
+                          }}>
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </Box>
+                    
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                      <Button
+                        variant="outlined"
+                        color="success"
+                        size="small"
+                        fullWidth
+                        onClick={() => openSuiExplorer(record.allowlistId)}
                       >
-                        复制
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2 mt-3">
-                    <button
-                      onClick={() => openSuiExplorer(record.allowlistId)}
-                      className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs"
-                    >
-                      查看 Allowlist
-                    </button>
-                    <button
-                      onClick={() => openSuiExplorerTx(record.txHash)}
-                      className="flex-1 px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-xs"
-                    >
-                      查看交易
-                    </button>
-                  </div>
-                </div>
-              </div>
+                        View Allowlist
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="inherit"
+                        size="small"
+                        fullWidth
+                        onClick={() => openSuiExplorerTx(record.txHash)}
+                      >
+                        View Transaction
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
             ))}
-          </div>
-        </div>
+          </Stack>
+        </Box>
       )}
 
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">
-          使用指南
-        </h3>
-        <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm text-gray-600">
-          <p><strong>步骤 1:</strong> 创建 Allowlist（获取 Allowlist ID 和 Cap ID）</p>
-          <p><strong>步骤 2:</strong> 在创建简历时启用 Seal 加密并填入 Allowlist ID 和 Cap ID</p>
-          <p><strong>步骤 3:</strong> HR 购买简历后，使用 Cap ID 添加 HR 地址到白名单</p>
-          <p><strong>步骤 4:</strong> HR 可以使用 SessionKey 解密查看简历</p>
-        </div>
-      </div>
-    </div>
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" gutterBottom>
+          User Guide
+        </Typography>
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            <strong>Step 1:</strong> Create Allowlist (Get Allowlist ID and Cap ID)
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            <strong>Step 2:</strong> Enable Seal encryption when creating resume and enter Allowlist ID and Cap ID
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            <strong>Step 3:</strong> After HR purchases resume, use Cap ID to add HR address to allowlist
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            <strong>Step 4:</strong> HR can use SessionKey to decrypt and view resume
+          </Typography>
+        </Paper>
+      </Box>
+    </Paper>
   );
 }
 
 /**
- * 添加地址到白名单组件
+ * Add Address to Allowlist Component
  */
 export function AddToAllowlist({ allowlistId, capId, onAddressAdded }) {
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
@@ -570,7 +790,7 @@ export function AddToAllowlist({ allowlistId, capId, onAddressAdded }) {
 
   const handleAdd = async () => {
     if (!address.trim()) {
-      alert('请输入地址');
+      alert('Please enter an address');
       return;
     }
 
@@ -584,43 +804,46 @@ export function AddToAllowlist({ allowlistId, capId, onAddressAdded }) {
         signAndExecute
       );
 
-      alert(`✅ 地址已添加到白名单！\n\n地址: ${address}`);
+      alert(`✅ Address added to allowlist!\n\nAddress: ${address}`);
       setAddress('');
       
       if (onAddressAdded) {
         onAddressAdded(address);
       }
     } catch (error) {
-      console.error('添加失败:', error);
-      alert('添加失败: ' + error.message);
+      console.error('Add failed:', error);
+      alert('Add failed: ' + error.message);
     } finally {
       setIsAdding(false);
     }
   };
 
   return (
-    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-      <h4 className="text-sm font-semibold text-green-900 mb-3">
-        添加地址到白名单
-      </h4>
+    <Paper variant="outlined" sx={{ p: 3, bgcolor: '#f0fdf4', borderColor: 'success.light' }}>
+      <Typography variant="subtitle1" color="success.dark" gutterBottom fontWeight="bold">
+        Add Address to Allowlist
+      </Typography>
       
-      <div className="space-y-3">
-        <input
-          type="text"
+      <Stack spacing={2}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Sui Address (0x...)"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder="Sui 地址 (0x...)"
-          className="w-full px-4 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          sx={{ bgcolor: 'white' }}
         />
         
-        <button
+        <Button
+          variant="contained"
+          color="success"
           onClick={handleAdd}
           disabled={isAdding || !address.trim()}
-          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+          startIcon={isAdding && <CircularProgress size={20} color="inherit" />}
         >
-          {isAdding ? '添加中...' : '添加到白名单'}
-        </button>
-      </div>
-    </div>
+          {isAdding ? 'Adding...' : 'Add to Allowlist'}
+        </Button>
+      </Stack>
+    </Paper>
   );
 }

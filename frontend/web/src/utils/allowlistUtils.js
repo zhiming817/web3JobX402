@@ -197,21 +197,54 @@ export function validateSuiAddress(address) {
  * @returns {Object} { allowlistId, capId }
  */
 export function extractCreatedObjectIds(result) {
-  const createdObjects = result.effects?.created || [];
+  console.log('🔍 Extracting IDs from result:', result);
   
   let allowlistId = '';
   let capId = '';
+
+  // 1. Try to get Allowlist ID from events (most reliable for Allowlist ID)
+  if (result.events && result.events.length > 0) {
+    result.events.forEach(event => {
+      if (event.type.includes(`::${ALLOWLIST_MODULE_NAME}::AllowlistCreated`)) {
+        console.log('Found AllowlistCreated event:', event);
+        if (event.parsedJson && event.parsedJson.allowlist_id) {
+          allowlistId = event.parsedJson.allowlist_id;
+        }
+      }
+    });
+  }
+
+  // 2. Try to use objectChanges (reliable for types)
+  if (result.objectChanges) {
+    result.objectChanges.forEach(change => {
+      if (change.type === 'created') {
+        const objectType = change.objectType || '';
+        console.log('Checking created object:', objectType, change.objectId);
+        
+        if (!allowlistId && objectType.includes(`::${ALLOWLIST_MODULE_NAME}::Allowlist`)) {
+          allowlistId = change.objectId;
+        } else if (!capId && objectType.includes(`::${ALLOWLIST_MODULE_NAME}::Cap`)) {
+          capId = change.objectId;
+        }
+      }
+    });
+  }
+
+  // 3. Fallback to effects if still missing
+  if ((!allowlistId || !capId) && result.effects?.created) {
+    console.log('Checking effects.created:', result.effects.created);
+    result.effects.created.forEach(obj => {
+      if (!allowlistId && obj.owner?.Shared) {
+        // Shared object is likely Allowlist
+        allowlistId = obj.reference?.objectId || '';
+      } else if (!capId && obj.owner?.AddressOwner) {
+        // AddressOwner object is likely Cap (since it's transferred to user)
+        capId = obj.reference?.objectId || '';
+      }
+    });
+  }
   
-  createdObjects.forEach(obj => {
-    if (obj.owner?.Shared) {
-      // Shared 对象是 Allowlist
-      allowlistId = obj.reference?.objectId || '';
-    } else if (obj.owner?.AddressOwner) {
-      // AddressOwner 对象是 Cap
-      capId = obj.reference?.objectId || '';
-    }
-  });
-  
+  console.log('✅ Extracted IDs:', { allowlistId, capId });
   return { allowlistId, capId };
 }
 
