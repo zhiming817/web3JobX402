@@ -24,7 +24,7 @@ export default function Home() {
       />
       
       {/* Overlay for better text readability */}
-      <div className="fixed inset-0 z-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
+      <div className="fixed inset-0 z-0 bg-gradient-to-br from-purple-900/60 via-indigo-800/50 to-violet-900/60" />
 
       {/* Content */}
       <div className="relative z-10">
@@ -33,15 +33,7 @@ export default function Home() {
         {/* Hero Section */}
         <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-20">
           <div className={`text-center max-w-5xl mx-auto transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-            <div className="mb-8 flex justify-center">
-              <div className="relative">
-                <img 
-                  src="/logo.png" 
-                  alt="ResumeVault Logo" 
-                  className="w-48 h-48 md:w-64 md:h-64 animate-bounce drop-shadow-2xl"
-                />
-              </div>
-            </div>
+           
             
             <h1 className="text-6xl md:text-8xl font-black mb-6 bg-gradient-to-r from-orange-300 via-yellow-300 to-red-300 text-transparent bg-clip-text drop-shadow-[0_4px_20px_rgba(255,165,0,0.8)]">
               ResumeVault
@@ -132,28 +124,19 @@ export default function Home() {
                 <div className="bg-white/80 rounded-lg p-6 border-2 border-orange-300">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-3xl">🔐</span>
-                    <p className="text-2xl font-bold text-orange-700">Encrypted Storage</p>
+                    <p className="text-2xl font-bold text-orange-700">Encrypted Storage with Seal</p>
                   </div>
                   <p className="text-lg text-gray-700 ml-12">
-                    Your resume is encrypted and stored on IPFS. Only you control access.
+                    Your resume is encrypted with Seal threshold encryption and stored on Walrus. Only authorized users can access.
                   </p>
                 </div>
                 <div className="bg-white/80 rounded-lg p-6 border-2 border-orange-300">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-3xl">💰</span>
-                    <p className="text-2xl font-bold text-orange-700">Pay-to-View with x402</p>
+                    <p className="text-2xl font-bold text-orange-700">Dual Access Modes</p>
                   </div>
                   <p className="text-lg text-gray-700 ml-12">
-                    Recruiters pay micropayments directly to your wallet to unlock your full resume.
-                  </p>
-                </div>
-                <div className="bg-white/80 rounded-lg p-6 border-2 border-orange-300">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-3xl">🤖</span>
-                    <p className="text-2xl font-bold text-orange-700">AI-Powered Matching</p>
-                  </div>
-                  <p className="text-lg text-gray-700 ml-12">
-                    AI Agent analyzes skills and generates anonymous summaries for discovery.
+                    <strong>Allowlist:</strong> Manually authorize specific recruiters. <strong>Subscription:</strong> Set a price, get paid directly when recruiters unlock your resume.
                   </p>
                 </div>
                 <div className="bg-white/80 rounded-lg p-6 border-2 border-orange-300">
@@ -205,8 +188,8 @@ export default function Home() {
                   <div className="flex items-start gap-4">
                     <span className="text-4xl font-black text-red-600">3</span>
                     <div>
-                      <p className="text-xl font-bold text-gray-900 mb-2">Pay to Unlock with x402</p>
-                      <p className="text-lg text-gray-700">Recruiters pay micropayment via x402 to unlock full resume details.</p>
+                      <p className="text-xl font-bold text-gray-900 mb-2">Pay to Unlock or Get Authorized</p>
+                      <p className="text-lg text-gray-700">Recruiters either get added to allowlist or pay subscription fee to unlock full resume.</p>
                     </div>
                   </div>
                 </div>
@@ -305,38 +288,38 @@ export default function Home() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white/10 backdrop-blur rounded-lg p-6 border-2 border-white/20">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-3xl">🔐</span>
-                    <h3 className="text-2xl font-bold text-yellow-300">Encryption</h3>
+                    <span className="text-3xl">🌊</span>
+                    <h3 className="text-2xl font-bold text-yellow-300">Walrus Storage</h3>
                   </div>
                   <p className="text-white/90 text-lg">
-                    IPFS/Arweave + AES/ZK for secure, decentralized storage
+                    Decentralized storage on Sui's Walrus for permanent data availability
+                  </p>
+                </div>
+                <div className="bg-white/10 backdrop-blur rounded-lg p-6 border-2 border-white/20">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-3xl">🔐</span>
+                    <h3 className="text-2xl font-bold text-yellow-300">Seal Encryption</h3>
+                  </div>
+                  <p className="text-white/90 text-lg">
+                    Threshold encryption with smart contract access control for privacy
+                  </p>
+                </div>
+                <div className="bg-white/10 backdrop-blur rounded-lg p-6 border-2 border-white/20">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-3xl">📜</span>
+                    <h3 className="text-2xl font-bold text-yellow-300">Move Contracts</h3>
+                  </div>
+                  <p className="text-white/90 text-lg">
+                    Allowlist & Subscription smart contracts on Sui blockchain
                   </p>
                 </div>
                 <div className="bg-white/10 backdrop-blur rounded-lg p-6 border-2 border-white/20">
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-3xl">👛</span>
-                    <h3 className="text-2xl font-bold text-yellow-300">Wallet Auth</h3>
+                    <h3 className="text-2xl font-bold text-yellow-300">Sui Wallet</h3>
                   </div>
                   <p className="text-white/90 text-lg">
-                    Phantom/Backpack wallet login for trustless identity
-                  </p>
-                </div>
-                <div className="bg-white/10 backdrop-blur rounded-lg p-6 border-2 border-white/20">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-3xl">💳</span>
-                    <h3 className="text-2xl font-bold text-yellow-300">x402 Payments</h3>
-                  </div>
-                  <p className="text-white/90 text-lg">
-                    Seamless micropayment infrastructure for content unlocking
-                  </p>
-                </div>
-                <div className="bg-white/10 backdrop-blur rounded-lg p-6 border-2 border-white/20">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-3xl">🤖</span>
-                    <h3 className="text-2xl font-bold text-yellow-300">AI Agents</h3>
-                  </div>
-                  <p className="text-white/90 text-lg">
-                    OpenAI Embeddings for resume parsing & skill matching
+                    Connect with Sui Wallet for identity and payments
                   </p>
                 </div>
               </div>
@@ -347,13 +330,7 @@ export default function Home() {
         {/* Final CTA Section */}
         <section className="py-32 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="mb-8 flex justify-center">
-              <img 
-                src="/logo.png" 
-                alt="ResumeVault Logo" 
-                className="w-32 h-32 md:w-40 md:h-40 animate-bounce drop-shadow-2xl"
-              />
-            </div>
+            
             <h2 className="text-5xl md:text-7xl font-black mb-8 text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] [text-shadow:_3px_3px_6px_rgb(0_0_0_/_90%)]">
               Take Control of Your Career Data
             </h2>

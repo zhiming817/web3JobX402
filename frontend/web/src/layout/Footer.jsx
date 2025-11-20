@@ -19,8 +19,8 @@ const Footer = () => {
               <span className="text-xl font-bold text-gray-900">ResumeVault</span>
             </div>
             <p className="text-gray-600 max-w-md">
-              Decentralized yield optimization protocol on Sui. 
-              Maximize your returns with automated market allocation strategies.
+              Blockchain-based decentralized resume authorization platform.
+              Encrypt your resume, control access, and earn from every view.
             </p>
             <div className="flex space-x-4 mt-6">
               <a
@@ -45,16 +45,20 @@ const Footer = () => {
             </h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/vaults" className="text-gray-600 hover:text-gray-900 transition-colors">
-                  Explore Vaults
+                <Link to="/resumes/browse" className="text-gray-600 hover:text-gray-900 transition-colors">
+                  Browse Resumes
                 </Link>
               </li>
               <li>
-                <Link to="/create" className="text-gray-600 hover:text-gray-900 transition-colors">
-                  Create Vault
+                <Link to="/resume/create" className="text-gray-600 hover:text-gray-900 transition-colors">
+                  Create Resume
                 </Link>
               </li>
-              
+              <li>
+                <Link to="/resumes" className="text-gray-600 hover:text-gray-900 transition-colors">
+                  My Resumes
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -77,15 +81,27 @@ const Footer = () => {
                   </svg>
                 </a>
               </li>
-              
-               <li>
+              <li>
                 <a
                   href="https://www.walrus.xyz/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1"
                 >
-                  <span>Walrus</span>
+                  <span>Walrus Storage</span>
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://seal.sui.io/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1"
+                >
+                  <span>Seal Encryption</span>
                   <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>

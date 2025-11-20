@@ -19,7 +19,6 @@ const Navbar = () => {
     { name: 'My Resumes', href: '/resumes' },
     { name: 'Browse Resumes', href: '/resumes/browse' },
     { name: '🔐 Allowlist', href: '/allowlist' },
-    { name: '🔐 Encryption Test', href: '/encryption-test' },
   ];
 
   const createItems = [
