@@ -292,7 +292,7 @@ export default function ResumePreviewPage() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
-            <p className="text-gray-600">{isDecrypting ? '正在解密简历...' : '加载简历数据中...'}</p>
+            <p className="text-gray-600">{isDecrypting ? 'Decrypting resume...' : 'Loading resume data...'}</p>
           </div>
         </div>
       </PageLayout>
@@ -307,21 +307,21 @@ export default function ResumePreviewPage() {
           <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">🔐</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">需要加密密钥</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Encryption Key Required</h2>
               <p className="text-gray-600">
-                此简历已使用简单加密保护，请输入密钥以查看内容
+                This resume is protected with simple encryption. Please enter the key to view the content.
               </p>
             </div>
             
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  加密密钥
+                  Encryption Key
                 </label>
                 <textarea
                   value={encryptionKey}
                   onChange={(e) => setEncryptionKey(e.target.value)}
-                  placeholder="请粘贴您的加密密钥..."
+                  placeholder="Please paste your encryption key..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
                   rows={4}
                 />
@@ -332,21 +332,21 @@ export default function ResumePreviewPage() {
                   onClick={() => navigate('/resumes')}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  返回列表
+                  Back to List
                 </button>
                 <button
                   onClick={handleKeySubmit}
                   disabled={isDecrypting}
                   className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isDecrypting ? '解密中...' : '解密'}
+                  {isDecrypting ? 'Decrypting...' : 'Decrypt'}
                 </button>
               </div>
               
               <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
-                  <strong>提示：</strong> 如果您在创建简历时选择保存密钥到本地，则无需手动输入。
-                  如果忘记密钥，将无法恢复简历内容。
+                  <strong>Tip:</strong> If you chose to save the key locally when creating the resume, you don't need to enter it manually.
+                  If you forget the key, the resume content cannot be recovered.
                 </p>
               </div>
             </div>
@@ -363,10 +363,10 @@ export default function ResumePreviewPage() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="text-6xl mb-4 animate-pulse">🔒</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Seal 加密简历</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Seal Encrypted Resume</h2>
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
-            <p className="text-gray-600">正在验证访问权限并解密...</p>
-            <p className="text-sm text-gray-500 mt-2">请稍候，这可能需要几秒钟</p>
+            <p className="text-gray-600">Verifying access permissions and decrypting...</p>
+            <p className="text-sm text-gray-500 mt-2">Please wait, this may take a few seconds</p>
           </div>
         </div>
       </PageLayout>
@@ -380,13 +380,13 @@ export default function ResumePreviewPage() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center max-w-md">
             <div className="text-red-500 text-5xl mb-4">⚠️</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">加载失败</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Loading Failed</h3>
             <p className="text-gray-600 mb-4">{error}</p>
             <button
               onClick={() => navigate('/resumes')}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              返回列表
+              Back to List
             </button>
           </div>
         </div>

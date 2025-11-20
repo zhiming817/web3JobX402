@@ -69,15 +69,15 @@ export default function ResumeCreate() {
     certificates: [],
   });
 
-  // 侧边栏导航
+  // Sidebar navigation
   const sections = [
-    { id: 'personal', name: '个人信息', icon: '👤' },
-    { id: 'skills', name: '个人优势', icon: '⭐' },
-    { id: 'desired', name: '期望职位', icon: '💼' },
-    { id: 'work', name: '工作经历', icon: '💻' },
-    { id: 'project', name: '项目经历', icon: '📁' },
-    { id: 'education', name: '教育经历', icon: '🎓' },
-    { id: 'certificate', name: '资格证书', icon: '📜' },
+    { id: 'personal', name: 'Personal Info', icon: '👤' },
+    { id: 'skills', name: 'Skills', icon: '⭐' },
+    { id: 'desired', name: 'Desired Position', icon: '💼' },
+    { id: 'work', name: 'Work Experience', icon: '💻' },
+    { id: 'project', name: 'Projects', icon: '📁' },
+    { id: 'education', name: 'Education', icon: '🎓' },
+    { id: 'certificate', name: 'Certificates', icon: '📜' },
   ];
 
   const handleInputChange = (section, field, value) => {
@@ -91,29 +91,29 @@ export default function ResumeCreate() {
   };
 
   const handleSave = async () => {
-    // 检查钱包连接
+    // Check wallet connection
     if (!connected || !publicKey) {
-      alert('请先连接钱包');
+      alert('Please connect your wallet first');
       return;
     }
 
-    // 验证表单数据
+    // Validate form data
     const validation = validateResumeData(formData);
     if (!validation.valid) {
-      alert('请填写必填项:\n' + validation.errors.join('\n'));
+      alert('Please fill in required fields:\n' + validation.errors.join('\n'));
       return;
     }
 
-    // 如果使用 Seal 加密，验证配置信息
+    // If using Seal encryption, validate configuration
     if (useSealEncryption) {
       if (encryptionMode === 'allowlist') {
         if (!allowlistId || !capId) {
-          alert('请填写 Allowlist ID 和 Cap ID\n\n如果您还没有 Allowlist，请先创建一个。');
+          alert('Please fill in Allowlist ID and Cap ID\n\nIf you don\'t have an Allowlist yet, please create one first.');
           return;
         }
       } else if (encryptionMode === 'subscription') {
         if (!subscriptionPrice || parseFloat(subscriptionPrice) <= 0) {
-          alert('请设置有效的订阅价格（大于 0 USDC）');
+          alert('Please set a valid subscription price (greater than 0 USDC)');
           return;
         }
       }
@@ -124,13 +124,13 @@ export default function ResumeCreate() {
     try {
       const walletAddress = publicKey;
       
-      // 1. 确保用户已注册
-      console.log('正在注册/获取用户信息...');
+      // 1. Ensure user is registered
+      console.log('Registering/getting user info...');
       await userService.registerOrGetUser(walletAddress);
       
-      // 2. 转换表单数据为 API 格式
+      // 2. Transform form data to API format
       const apiData = transformResumeData(formData, walletAddress);
-      console.log('创建简历数据:', apiData);
+      console.log('Creating resume data:', apiData);
       
       let result;
       
@@ -166,13 +166,13 @@ export default function ResumeCreate() {
           );
           
           alert(
-            `✅ 简历创建成功！\n\n` +
-            `简历 ID: ${result.resumeId}\n` +
+            `✅ Resume created successfully!\n\n` +
+            `Resume ID: ${result.resumeId}\n` +
             `Blob ID: ${result.blobId}\n` +
             `Encryption ID: ${result.encryptionId}\n\n` +
-            `🔐 加密模式: Allowlist\n` +
-            `✅ 您已自动添加到访问白名单\n` +
-            `访问权限由 Allowlist 控制\n` +
+            `🔐 Encryption Mode: Allowlist\n` +
+            `✅ You have been automatically added to the access whitelist\n` +
+            `Access control managed by Allowlist\n` +
             `Allowlist ID: ${allowlistId}`
           );
           
@@ -301,67 +301,67 @@ export default function ResumeCreate() {
           console.log('✅ Seal 加密创建成功:', result);
           
           alert(
-            `✅ 简历创建成功！\n\n` +
-            `简历 ID: ${result.resumeId}\n` +
+            `✅ Resume created successfully!\n\n` +
+            `Resume ID: ${result.resumeId}\n` +
             `Blob ID: ${result.blobId}\n` +
             `Encryption ID: ${result.encryptionId}\n\n` +
-            `💰 加密模式: 订阅\n` +
-            `💵 订阅价格: ${subscriptionPrice} USDC\n` +
-            `⏰ 访问时限: 永久\n` +
+            `💰 Encryption Mode: Subscription\n` +
+            `💵 Subscription Price: ${subscriptionPrice} USDC\n` +
+            `⏰ Access Duration: Permanent\n` +
             `📦 Service ID: ${serviceId}\n\n` +
-            `✨ 用户购买订阅后即可永久查看您的简历`
+            `✨ Users can permanently view your resume after purchasing subscription`
           );
         }
       } else {
-        // 使用简单加密创建
-        console.log('🔒 使用简单加密创建简历...');
+        // Use simple encryption
+        console.log('🔒 Using simple encryption to create resume...');
         result = await resumeService.createResume(apiData);
         
-        console.log('简历创建成功:', result);
+        console.log('Resume created successfully:', result);
         
-        // 显示加密密钥并提示保存
+        // Display encryption key and prompt to save
         const saveKey = window.confirm(
-          `✅ 简历创建成功！\n\n` +
-          `简历 ID: ${result.resumeId}\n` +
+          `✅ Resume created successfully!\n\n` +
+          `Resume ID: ${result.resumeId}\n` +
           `Blob ID: ${result.blobId}\n\n` +
-          `⚠️ 重要：您的加密密钥如下\n` +
+          `⚠️ Important: Your encryption key is:\n` +
           `${result.encryptionKey}\n\n` +
-          `此密钥是解密简历的唯一方式，请务必保存！\n` +
-          `点击"确定"复制密钥到剪贴板`
+          `This key is the only way to decrypt your resume, please save it!\n` +
+          `Click "OK" to copy the key to clipboard`
         );
         
         if (saveKey) {
-          // 复制密钥到剪贴板
+          // Copy key to clipboard
           navigator.clipboard.writeText(result.encryptionKey).then(() => {
-            alert('✅ 加密密钥已复制到剪贴板！\n请妥善保存，丢失将无法恢复简历内容。');
+            alert('✅ Encryption key copied to clipboard!\nPlease save it properly, loss will make resume unrecoverable.');
           }).catch(err => {
-            console.error('复制失败:', err);
-            alert('❌ 复制失败，请手动保存密钥:\n' + result.encryptionKey);
+            console.error('Copy failed:', err);
+            alert('❌ Copy failed, please save the key manually:\n' + result.encryptionKey);
           });
         }
         
-        // 将加密密钥保存到 localStorage（可选）
+        // Save encryption key to localStorage (optional)
         const shouldSaveLocally = window.confirm(
-          '是否将加密密钥保存到浏览器本地？\n\n' +
-          '✅ 优点：方便预览和编辑自己的简历\n' +
-          '⚠️ 风险：如果其他人使用此设备，可能访问您的简历\n\n' +
-          '建议：仅在个人设备上保存'
+          'Save encryption key to browser local storage?\n\n' +
+          '✅ Advantages: Convenient for previewing and editing your own resume\n' +
+          '⚠️ Risks: Others using this device may access your resume\n\n' +
+          'Recommendation: Only save on personal devices'
         );
         
         if (shouldSaveLocally) {
           const keys = JSON.parse(localStorage.getItem('resumeEncryptionKeys') || '{}');
           keys[result.resumeId] = result.encryptionKey;
           localStorage.setItem('resumeEncryptionKeys', JSON.stringify(keys));
-          console.log('✅ 加密密钥已保存到本地');
+          console.log('✅ Encryption key saved locally');
         }
       }
       
-      // 跳转到简历列表页
+      // Navigate to resume list page
       navigate('/resumes');
       
     } catch (error) {
-      console.error('创建简历失败:', error);
-      alert(`创建简历失败: ${error.message}`);
+      console.error('Resume creation failed:', error);
+      alert(`Resume creation failed: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -378,7 +378,7 @@ export default function ResumeCreate() {
           {/* 左侧导航 */}
           <div className="w-64 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-              <h2 className="text-xl font-bold mb-6 text-gray-900">简历目录</h2>
+              <h2 className="text-xl font-bold mb-6 text-gray-900">Resume Sections</h2>
               <nav className="space-y-2">
                 {sections.map(section => (
                   <button
@@ -443,28 +443,28 @@ export default function ResumeCreate() {
                   className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                   disabled={isSubmitting}
                 >
-                  取消
+                  Cancel
                 </button>
                 <button
                   onClick={handlePreview}
                   className="px-6 py-2 border border-orange-500 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
                   disabled={isSubmitting}
                 >
-                  预览
+                  Preview
                 </button>
                 <button
                   onClick={() => setShowSealOptions(!showSealOptions)}
                   className="px-6 py-2 border border-blue-500 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                   disabled={isSubmitting}
                 >
-                  {showSealOptions ? '隐藏高级选项' : '高级选项'}
+                  {showSealOptions ? 'Hide Advanced Options' : 'Advanced Options'}
                 </button>
                 <button
                   onClick={handleSave}
                   className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isSubmitting || !connected}
                 >
-                  {isSubmitting ? '创建中...' : connected ? '完成' : '请先连接钱包'}
+                  {isSubmitting ? 'Creating...' : connected ? 'Complete' : 'Connect Wallet First'}
                 </button>
               </div>
 

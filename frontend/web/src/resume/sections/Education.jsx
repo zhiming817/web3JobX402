@@ -42,16 +42,16 @@ export default function Education({ formData, setFormData }) {
   };
 
   const degreeLabels = {
-    bachelor: '本科',
-    master: '硕士',
-    doctor: '博士',
-    associate: '专科',
+    bachelor: 'Bachelor',
+    master: 'Master',
+    doctor: 'Doctor',
+    associate: 'Associate',
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">教育经历</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Education</h2>
         <button
           onClick={() => setIsAdding(true)}
           className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
@@ -59,11 +59,11 @@ export default function Education({ formData, setFormData }) {
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          添加
+          Add
         </button>
       </div>
 
-      {/* 教育经历列表 */}
+      {/* Education List */}
       {formData.education.map((edu, index) => (
         <div key={index} className="mb-4 p-6 border-2 border-gray-200 rounded-lg bg-gray-50 flex items-start gap-4">
           <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
@@ -78,7 +78,7 @@ export default function Education({ formData, setFormData }) {
               <div>
                 <h3 className="text-lg font-bold text-gray-900">{edu.school}</h3>
                 <p className="text-sm text-gray-600">
-                  {edu.major} | {degreeLabels[edu.degree]}·{edu.education_type === 'parttime' ? '非全日制' : '全日制'}
+                  {edu.major} | {degreeLabels[edu.degree]}·{edu.education_type === 'parttime' ? 'Part-time' : 'Full-time'}
                 </p>
                 <p className="text-sm text-gray-500">
                   {edu.start_date} - {edu.end_date}
@@ -102,26 +102,26 @@ export default function Education({ formData, setFormData }) {
             </div>
             {edu.experience && (
               <div className="text-sm text-gray-700 whitespace-pre-line mb-2">
-                <strong>在校经历：</strong> {edu.experience}
+                <strong>Campus Experience:</strong> {edu.experience}
               </div>
             )}
             {edu.thesis && (
               <div className="text-sm text-gray-700">
-                <strong>毕业设计/论文题目：</strong> {edu.thesis}
+                <strong>Thesis/Capstone Project:</strong> {edu.thesis}
               </div>
             )}
           </div>
         </div>
       ))}
 
-      {/* 添加/编辑表单 */}
+      {/* Add/Edit Form */}
       {isAdding && (
         <div className="border-2 border-teal-300 rounded-lg p-6 bg-teal-50">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">编辑教育经历</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Education</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                学校名称
+                School Name
               </label>
               <input
                 type="text"
@@ -133,61 +133,61 @@ export default function Education({ formData, setFormData }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                学制类型
+                Education Type
               </label>
               <select
                 value={currentEdu.education_type}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, education_type: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               >
-                <option value="fulltime">全日制</option>
-                <option value="parttime">非全日制</option>
+                <option value="fulltime">Full-time</option>
+                <option value="parttime">Part-time</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                学历
+                Degree
               </label>
               <select
                 value={currentEdu.degree}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, degree: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               >
-                <option value="bachelor">本科</option>
-                <option value="master">硕士</option>
-                <option value="doctor">博士</option>
-                <option value="associate">专科</option>
+                <option value="bachelor">Bachelor</option>
+                <option value="master">Master</option>
+                <option value="doctor">Doctor</option>
+                <option value="associate">Associate</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                专业
+                Major
               </label>
               <input
                 type="text"
                 value={currentEdu.major}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, major: e.target.value })}
-                placeholder="计算机科学与技术"
+                placeholder="Computer Science and Technology"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                时间段
+                Time Period
               </label>
               <div className="flex items-center gap-2">
                 <DatePicker
                   value={currentEdu.start_date}
                   onChange={(value) => setCurrentEdu({ ...currentEdu, start_date: value })}
-                  placeholder="开始时间"
+                  placeholder="Start Date"
                   showMonthYearPicker
                   className="flex-1"
                 />
-                <span className="text-gray-500">至</span>
+                <span className="text-gray-500">to</span>
                 <DatePicker
                   value={currentEdu.end_date}
                   onChange={(value) => setCurrentEdu({ ...currentEdu, end_date: value })}
-                  placeholder="结束时间"
+                  placeholder="End Date"
                   showMonthYearPicker
                   className="flex-1"
                 />
@@ -195,22 +195,22 @@ export default function Education({ formData, setFormData }) {
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                在校经历 (选填)
+                Campus Experience (Optional)
               </label>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-500">简历亮点关键词</span>
+                <span className="text-xs text-gray-500">Resume Highlights Keywords</span>
                 <button className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium text-sm">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                   </svg>
-                  不知道怎么展示教育经历?<br />
-                  请试开启简历亮点关键词
+                  Not sure how to showcase your education?<br />
+                  Try enabling resume highlights keywords
                 </button>
               </div>
               <textarea
                 value={currentEdu.experience}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, experience: e.target.value })}
-                placeholder="1. 在校担任职务...&#10;2. 获得荣誉...&#10;3. 所学主要课程..."
+                placeholder="1. Campus positions held...&#10;2. Honors and awards received...&#10;3. Major courses studied..."
                 rows={5}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
@@ -220,24 +220,24 @@ export default function Education({ formData, setFormData }) {
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                毕业设计/论文题目 (选填)
+                Thesis/Capstone Project (Optional)
               </label>
               <input
                 type="text"
                 value={currentEdu.thesis}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, thesis: e.target.value })}
-                placeholder="请输入"
+                placeholder="Please enter"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                毕业设计/论文描述 (选填)
+                Thesis/Capstone Description (Optional)
               </label>
               <textarea
                 value={currentEdu.thesisDescription}
                 onChange={(e) => setCurrentEdu({ ...currentEdu, thesisDescription: e.target.value })}
-                placeholder="描述毕业设计/论文的主要内容，向BOSS展示你的学术能力&#10;例如：&#10;1. 选题的目的及意义...&#10;2. 摘要及关键词...&#10;3. 论文结论或成果"
+                placeholder="Describe the main content of your thesis/capstone project to showcase your academic abilities&#10;For example:&#10;1. Purpose and significance of the topic...&#10;2. Abstract and keywords...&#10;3. Thesis conclusions or outcomes"
                 rows={5}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
@@ -248,13 +248,13 @@ export default function Education({ formData, setFormData }) {
               onClick={() => setIsAdding(false)}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              取消
+              Cancel
             </button>
             <button
               onClick={handleAdd}
               className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
             >
-              完成
+              Complete
             </button>
           </div>
         </div>
@@ -263,7 +263,7 @@ export default function Education({ formData, setFormData }) {
       {formData.education.length === 0 && !isAdding && (
         <div className="text-center py-12 text-gray-500">
           <div className="text-5xl mb-4">🎓</div>
-          <p>暂无教育经历，点击上方"添加"按钮创建</p>
+          <p>No education yet, click the "Add" button above to create</p>
         </div>
       )}
     </div>

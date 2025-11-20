@@ -42,7 +42,7 @@ export default function ProjectExperience({ formData, setFormData }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">项目经历</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Project Experience</h2>
         <button
           onClick={() => setIsAdding(true)}
           className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
@@ -50,18 +50,18 @@ export default function ProjectExperience({ formData, setFormData }) {
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          添加
+          Add
         </button>
       </div>
 
-      {/* 项目经历列表 */}
+      {/* Project Experience List */}
       {formData.projectExperience.map((project, index) => (
         <div key={index} className="mb-4 p-6 border-2 border-gray-200 rounded-lg bg-gray-50">
           <div className="flex justify-between items-start mb-2">
             <div>
               <h3 className="text-lg font-bold text-gray-900">{project.name}</h3>
               <p className="text-sm text-gray-600">
-                {project.role} | {project.startDate} - {project.current ? '至今' : project.endDate}
+                {project.role} | {project.startDate} - {project.current ? 'Present' : project.endDate}
               </p>
               {project.link && (
                 <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
@@ -86,26 +86,26 @@ export default function ProjectExperience({ formData, setFormData }) {
             </div>
           </div>
           <div className="text-sm text-gray-700 mb-2">
-            <strong>项目描述：</strong>
+            <strong>Project Description:</strong>
             <div className="whitespace-pre-line">{project.description}</div>
           </div>
           {project.achievements && (
             <div className="text-sm text-gray-700">
-              <strong>项目业绩：</strong>
+              <strong>Project Achievements:</strong>
               <div className="whitespace-pre-line">{project.achievements}</div>
             </div>
           )}
         </div>
       ))}
 
-      {/* 添加/编辑表单 */}
+      {/* Add/Edit Form */}
       {isAdding && (
         <div className="border-2 border-teal-300 rounded-lg p-6 bg-teal-50">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">编辑项目经历</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Project Experience</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                项目名称
+                Project Name
               </label>
               <input
                 type="text"
@@ -117,46 +117,46 @@ export default function ProjectExperience({ formData, setFormData }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                项目角色
+                Project Role
               </label>
               <input
                 type="text"
                 value={currentProject.role}
                 onChange={(e) => setCurrentProject({ ...currentProject, role: e.target.value })}
-                placeholder="全栈开发"
+                placeholder="Full Stack Developer"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                项目链接 (选填)
+                Project Link (Optional)
               </label>
               <input
                 type="url"
                 value={currentProject.link}
                 onChange={(e) => setCurrentProject({ ...currentProject, link: e.target.value })}
-                placeholder="例如：github.com/erik"
+                placeholder="e.g.: github.com/erik"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                项目开始时间
+                Project Start Date
               </label>
               <div className="flex items-center gap-2">
                 <DatePicker
                   value={currentProject.startDate}
                   onChange={(value) => setCurrentProject({ ...currentProject, startDate: value })}
-                  placeholder="开始时间"
+                  placeholder="Start Date"
                   showMonthYearPicker
                   className="flex-1"
                 />
-                <span className="text-gray-500">至</span>
+                <span className="text-gray-500">to</span>
                 <DatePicker
                   value={currentProject.endDate}
                   onChange={(value) => setCurrentProject({ ...currentProject, endDate: value })}
                   disabled={currentProject.current}
-                  placeholder="至今"
+                  placeholder="Present"
                   showMonthYearPicker
                   className="flex-1"
                 />
@@ -164,21 +164,21 @@ export default function ProjectExperience({ formData, setFormData }) {
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                项目描述
+                Project Description
               </label>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-500">简历亮点关键词</span>
+                <span className="text-xs text-gray-500">Resume Highlights Keywords</span>
                 <button className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium text-sm">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                   </svg>
-                  润色
+                  Polish
                 </button>
               </div>
               <textarea
                 value={currentProject.description}
                 onChange={(e) => setCurrentProject({ ...currentProject, description: e.target.value })}
-                placeholder="请填写内容"
+                placeholder="Please fill in content"
                 rows={8}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
@@ -188,12 +188,12 @@ export default function ProjectExperience({ formData, setFormData }) {
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                项目业绩 (选填)
+                Project Achievements (Optional)
               </label>
               <textarea
                 value={currentProject.achievements}
                 onChange={(e) => setCurrentProject({ ...currentProject, achievements: e.target.value })}
-                placeholder="请填写内容"
+                placeholder="Please fill in content"
                 rows={5}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
@@ -207,13 +207,13 @@ export default function ProjectExperience({ formData, setFormData }) {
               onClick={() => setIsAdding(false)}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              取消
+              Cancel
             </button>
             <button
               onClick={handleAdd}
               className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
             >
-              完成
+              Complete
             </button>
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function ProjectExperience({ formData, setFormData }) {
       {formData.projectExperience.length === 0 && !isAdding && (
         <div className="text-center py-12 text-gray-500">
           <div className="text-5xl mb-4">📁</div>
-          <p>暂无项目经历，点击上方"添加"按钮创建</p>
+          <p>No project experience yet, click the "Add" button above to create</p>
         </div>
       )}
     </div>

@@ -4,37 +4,37 @@ import DatePicker from '../../components/DatePicker';
 export default function PersonalInfo({ formData, handleInputChange }) {
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6 text-gray-900">编辑个人信息</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-900">Edit Personal Information</h2>
       <div className="grid grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            姓名
+            Name
           </label>
           <input
             type="text"
             value={formData.personal.name}
             onChange={(e) => handleInputChange('personal', 'name', e.target.value)}
-            placeholder="小明"
+            placeholder="John"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-black"
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            当前求职状态
+            Current Job Status
           </label>
           <select
             value={formData.personal.jobStatus}
             onChange={(e) => handleInputChange('personal', 'jobStatus', e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           >
-            <option value="employed">离职-随时到岗</option>
-            <option value="looking">在职-看看机会</option>
-            <option value="urgent">急寻机会</option>
+            <option value="employed">Available - Ready to Start</option>
+            <option value="looking">Employed - Open to Opportunities</option>
+            <option value="urgent">Actively Looking</option>
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            性别
+            Gender
           </label>
           <div className="flex gap-4">
             <button
@@ -45,7 +45,7 @@ export default function PersonalInfo({ formData, handleInputChange }) {
                   : 'border-gray-300 text-gray-700 hover:border-gray-400'
               }`}
             >
-              男
+              Male
             </button>
             <button
               onClick={() => handleInputChange('personal', 'gender', 'female')}
@@ -55,38 +55,38 @@ export default function PersonalInfo({ formData, handleInputChange }) {
                   : 'border-gray-300 text-gray-700 hover:border-gray-400'
               }`}
             >
-              女
+              Female
             </button>
           </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            我的牛人身份
+            Identity
           </label>
           <select
             value={formData.personal.identity}
             onChange={(e) => handleInputChange('personal', 'identity', e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-black"
           >
-            <option value="professional">职场人</option>
-            <option value="student">学生</option>
-            <option value="freelancer">自由职业</option>
+            <option value="professional">Professional</option>
+            <option value="student">Student</option>
+            <option value="freelancer">Freelancer</option>
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            出生年月
+            Date of Birth
           </label>
           <DatePicker
             value={formData.personal.birthDate}
             onChange={(value) => handleInputChange('personal', 'birthDate', value)}
-            placeholder="选择出生年月"
+            placeholder="Select date of birth"
             showMonthYearPicker
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            电话
+            Phone
           </label>
           <input
             type="tel"
@@ -98,18 +98,18 @@ export default function PersonalInfo({ formData, handleInputChange }) {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            参加工作时间
+            Work Start Date
           </label>
           <DatePicker
             value={formData.personal.workStartDate}
             onChange={(value) => handleInputChange('personal', 'workStartDate', value)}
-            placeholder="选择参加工作时间"
+            placeholder="Select work start date"
             showMonthYearPicker
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            微信号 (选填)
+            WeChat (Optional)
           </label>
           <input
             type="text"
@@ -121,7 +121,7 @@ export default function PersonalInfo({ formData, handleInputChange }) {
         </div>
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            邮箱 (选填)
+            Email (Optional)
           </label>
           <input
             type="email"

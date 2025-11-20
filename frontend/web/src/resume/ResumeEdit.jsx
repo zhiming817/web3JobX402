@@ -442,7 +442,7 @@ export default function ResumeEdit() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mb-4"></div>
-            <p className="text-gray-600">{isDecrypting ? '正在解密简历...' : '加载简历数据中...'}</p>
+            <p className="text-gray-600">{isDecrypting ? 'Decrypting resume...' : 'Loading resume data...'}</p>
           </div>
         </div>
       </PageLayout>
@@ -457,21 +457,21 @@ export default function ResumeEdit() {
           <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">🔐</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">需要加密密钥</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Encryption Key Required</h2>
               <p className="text-gray-600">
-                此简历已加密，请输入密钥以编辑内容
+                This resume is encrypted. Please enter the key to edit the content.
               </p>
             </div>
             
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  加密密钥
+                  Encryption Key
                 </label>
                 <textarea
                   value={encryptionKey}
                   onChange={(e) => setEncryptionKey(e.target.value)}
-                  placeholder="请粘贴您的加密密钥..."
+                  placeholder="Please paste your encryption key..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
                   rows={4}
                 />
@@ -482,21 +482,21 @@ export default function ResumeEdit() {
                   onClick={() => navigate('/resumes')}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  返回列表
+                  Back to List
                 </button>
                 <button
                   onClick={handleKeySubmit}
                   disabled={isDecrypting}
                   className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isDecrypting ? '解密中...' : '解密'}
+                  {isDecrypting ? 'Decrypting...' : 'Decrypt'}
                 </button>
               </div>
               
               <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
-                  <strong>提示：</strong> 如果您在创建简历时选择保存密钥到本地，则无需手动输入。
-                  如果忘记密钥，将无法编辑简历内容。
+                  <strong>Tip:</strong> If you chose to save the key locally when creating the resume, you don't need to enter it manually.
+                  If you forget the key, you will not be able to edit the resume content.
                 </p>
               </div>
             </div>
@@ -513,13 +513,13 @@ export default function ResumeEdit() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center max-w-md">
             <div className="text-red-500 text-5xl mb-4">⚠️</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">加载失败</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Loading Failed</h3>
             <p className="text-gray-600 mb-4">{loadError}</p>
             <button
               onClick={() => navigate('/resumes')}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              返回列表
+              Back to List
             </button>
           </div>
         </div>
@@ -534,7 +534,7 @@ export default function ResumeEdit() {
           {/* 左侧导航 */}
           <div className="w-64 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-              <h2 className="text-xl font-bold mb-6 text-gray-900">简历目录</h2>
+              <h2 className="text-xl font-bold mb-6 text-gray-900">Resume Sections</h2>
               <nav className="space-y-2">
                 {sections.map(section => (
                   <button
@@ -562,8 +562,8 @@ export default function ResumeEdit() {
                 <div className="flex items-center">
                   <span className="text-2xl mr-3">✏️</span>
                   <div>
-                    <h3 className="font-semibold text-blue-900">编辑模式</h3>
-                    <p className="text-sm text-blue-700">正在编辑简历 ID: {id}</p>
+                    <h3 className="font-semibold text-blue-900">Edit Mode</h3>
+                    <p className="text-sm text-blue-700">Editing Resume ID: {id}</p>
                   </div>
                 </div>
               </div>

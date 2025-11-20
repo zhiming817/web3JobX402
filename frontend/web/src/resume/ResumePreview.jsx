@@ -70,7 +70,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
         {/* 头部操作栏 */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm z-10">
-          <h3 className="text-xl font-bold text-gray-900">简历预览</h3>
+          <h3 className="text-xl font-bold text-gray-900">Resume Preview</h3>
           <div className="flex gap-3">
             <button
               onClick={handleExportPDF}
@@ -85,14 +85,14 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>导出中...</span>
+                  <span>Exporting...</span>
                 </>
               ) : (
                 <>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span>导出PDF</span>
+                  <span>Export PDF</span>
                 </>
               )}
             </button>
@@ -101,7 +101,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
               disabled={isExporting}
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
             >
-              关闭
+              Close
             </button>
           </div>
         </div>
@@ -112,11 +112,11 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
             {/* 个人信息 */}
             <div className="text-center mb-8 pb-6 border-b-2 border-orange-500">
               <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                {formData.personal.name || '未填写姓名'}
+                {formData.personal.name || 'Name Not Filled'}
               </h1>
               <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-600">
                 {formData.personal.gender && (
-                  <span>{formData.personal.gender === 'male' ? '男' : '女'}</span>
+                  <span>{formData.personal.gender === 'male' ? 'Male' : 'Female'}</span>
                 )}
                 {formData.personal.birthDate && (
                   <span>{formData.personal.birthDate}</span>
@@ -137,12 +137,12 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
             {(formData.desiredPosition.position || formData.desiredPosition.industry) && (
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-l-4 border-orange-500 pl-3">
-                  💼 期望职位
+                  💼 Desired Position
                 </h2>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   {formData.desiredPosition.position && (
                     <div>
-                      <span className="text-gray-500">职位：</span>
+                      <span className="text-gray-500">Position:</span>
                       <span className="text-gray-900 font-medium ml-2">
                         {formData.desiredPosition.position}
                       </span>
@@ -150,7 +150,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
                   )}
                   {formData.desiredPosition.industry && (
                     <div>
-                      <span className="text-gray-500">行业：</span>
+                      <span className="text-gray-500">Industry:</span>
                       <span className="text-gray-900 font-medium ml-2">
                         {formData.desiredPosition.industry}
                       </span>
@@ -158,23 +158,23 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
                   )}
                   {formData.desiredPosition.jobType && (
                     <div>
-                      <span className="text-gray-500">类型：</span>
+                      <span className="text-gray-500">Type:</span>
                       <span className="text-gray-900 font-medium ml-2">
-                        {formData.desiredPosition.jobType === 'fulltime' ? '全职' : '兼职'}
+                        {formData.desiredPosition.jobType === 'fulltime' ? 'Full-time' : 'Part-time'}
                       </span>
                     </div>
                   )}
                   {(formData.desiredPosition.salaryMin || formData.desiredPosition.salaryMax) && (
                     <div>
-                      <span className="text-gray-500">薪资：</span>
+                      <span className="text-gray-500">Salary:</span>
                       <span className="text-gray-900 font-medium ml-2">
-                        {formData.desiredPosition.salaryMin || '0'}k - {formData.desiredPosition.salaryMax || '不限'}k
+                        {formData.desiredPosition.salaryMin || '0'}k - {formData.desiredPosition.salaryMax || 'Unlimited'}k
                       </span>
                     </div>
                   )}
                   {formData.desiredPosition.city && (
                     <div className="col-span-2">
-                      <span className="text-gray-500">期望城市：</span>
+                      <span className="text-gray-500">Preferred City:</span>
                       <span className="text-gray-900 font-medium ml-2">
                         {formData.desiredPosition.city}
                         {formData.desiredPosition.otherCities?.length > 0 && 
@@ -334,7 +334,7 @@ export default function ResumePreview({ formData, onClose, onExportPDF }) {
 
             {/* 页脚 */}
             <div className="mt-8 pt-6 border-t border-gray-200 text-center text-xs text-gray-400">
-              <p>本简历由 ResumeVault 生成 · 基于 Solana 区块链的加密简历平台</p>
+              <p>Generated by ResumeVault · Encrypted Resume Platform Based on Solana Blockchain</p>
             </div>
           </div>
         </div>

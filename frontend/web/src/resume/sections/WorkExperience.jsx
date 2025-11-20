@@ -42,7 +42,7 @@ export default function WorkExperience({ formData, setFormData }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">工作经历</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Work Experience</h2>
         <button
           onClick={() => setIsAdding(true)}
           className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
@@ -50,11 +50,11 @@ export default function WorkExperience({ formData, setFormData }) {
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          添加
+          Add
         </button>
       </div>
 
-      {/* 工作经历列表 */}
+      {/* Work Experience List */}
       {formData.workExperience.map((work, index) => (
         <div key={index} className="mb-4 p-6 border-2 border-gray-200 rounded-lg bg-gray-50">
           <div className="flex justify-between items-start mb-2">
@@ -63,7 +63,7 @@ export default function WorkExperience({ formData, setFormData }) {
                 {work.company} - {work.position}
               </h3>
               <p className="text-sm text-gray-600">
-                {work.startDate} - {work.current ? '至今' : work.endDate}
+                {work.startDate} - {work.current ? 'Present' : work.endDate}
               </p>
             </div>
             <div className="flex gap-2">
@@ -88,77 +88,77 @@ export default function WorkExperience({ formData, setFormData }) {
         </div>
       ))}
 
-      {/* 添加/编辑表单 */}
+      {/* Add/Edit Form */}
       {isAdding && (
         <div className="border-2 border-teal-300 rounded-lg p-6 bg-teal-50">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">编辑工作经历</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Work Experience</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                公司名称
+                Company Name
               </label>
               <input
                 type="text"
                 value={currentWork.company}
                 onChange={(e) => setCurrentWork({ ...currentWork, company: e.target.value })}
-                placeholder="xxx信息科技有限公司"
+                placeholder="ABC Technology Co., Ltd."
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                所属行业
+                Industry
               </label>
               <input
                 type="text"
                 value={currentWork.industry}
                 onChange={(e) => setCurrentWork({ ...currentWork, industry: e.target.value })}
-                placeholder="互联网"
+                placeholder="Internet"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                所属部门 (选填)
+                Department (Optional)
               </label>
               <input
                 type="text"
                 value={currentWork.department}
                 onChange={(e) => setCurrentWork({ ...currentWork, department: e.target.value })}
-                placeholder="例如：产品部"
+                placeholder="e.g.: Product Department"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                职位名称
+                Position
               </label>
               <input
                 type="text"
                 value={currentWork.position}
                 onChange={(e) => setCurrentWork({ ...currentWork, position: e.target.value })}
-                placeholder="全栈"
+                placeholder="Full Stack"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                在职时间
+                Employment Period
               </label>
               <div className="flex items-center gap-2">
                 <DatePicker
                   value={currentWork.startDate}
                   onChange={(value) => setCurrentWork({ ...currentWork, startDate: value })}
-                  placeholder="开始时间"
+                  placeholder="Start Date"
                   showMonthYearPicker
                   className="flex-1"
                 />
-                <span className="text-gray-500">至</span>
+                <span className="text-gray-500">to</span>
                 <DatePicker
                   value={currentWork.endDate}
                   onChange={(value) => setCurrentWork({ ...currentWork, endDate: value })}
                   disabled={currentWork.current}
-                  placeholder="至今"
+                  placeholder="Present"
                   showMonthYearPicker
                   className="flex-1"
                 />
@@ -166,21 +166,21 @@ export default function WorkExperience({ formData, setFormData }) {
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                工作内容
+                Job Description
               </label>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-500">简历亮点关键词</span>
+                <span className="text-xs text-gray-500">Resume Highlights Keywords</span>
                 <button className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium text-sm">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                   </svg>
-                  润色
+                  Polish
                 </button>
               </div>
               <textarea
                 value={currentWork.description}
                 onChange={(e) => setCurrentWork({ ...currentWork, description: e.target.value })}
-                placeholder="1. 完成模块的开发；&#10;2. 配合测试人员完成模块的测试工作；&#10;3. 参与技术难题讨论会议，并提出自己的建议；&#10;4.相关开发文档编写。"
+                placeholder="1. Complete module development;&#10;2. Coordinate with testers to complete module testing;&#10;3. Participate in technical challenge discussions and provide suggestions;&#10;4. Write relevant development documentation."
                 rows={8}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-black"
               />
@@ -194,13 +194,13 @@ export default function WorkExperience({ formData, setFormData }) {
               onClick={() => setIsAdding(false)}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              取消
+              Cancel
             </button>
             <button
               onClick={handleAdd}
               className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
             >
-              完成
+              Complete
             </button>
           </div>
         </div>
@@ -209,7 +209,7 @@ export default function WorkExperience({ formData, setFormData }) {
       {formData.workExperience.length === 0 && !isAdding && (
         <div className="text-center py-12 text-gray-500">
           <div className="text-5xl mb-4">💼</div>
-          <p>暂无工作经历，点击上方"添加"按钮创建</p>
+          <p>No work experience yet, click the "Add" button above to create</p>
         </div>
       )}
     </div>
